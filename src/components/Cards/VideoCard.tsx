@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   focused: {
-    borderWidth: 4,
+    borderWidth: 7,
     borderColor: 'white',
     borderRadius: 10,
   },

@@ -28,16 +28,6 @@ const getDisplayText = (title?: string) => {
   return title.charAt(0).toUpperCase();
 };
 
-  const getImageUrl = (url?: string) => {
-    if (!url) return undefined;
-
-    // 🔥 replace webp with jpg (if backend supports)
-    if (url.endsWith('.webp')) {
-      return url.replace('.webp', '.jpg');
-    }
-
-    return url;
-  };
 export const CategoryCard = ({
   title,
   SubCategory,
@@ -58,13 +48,13 @@ export const CategoryCard = ({
             focused && styles.focused,
           ]}>
           {image == null ? (
-            <View style={{width: 330, height: 200,backgroundColor:'#007BFF',borderRadius:10, display:'flex',justifyContent:'center',alignItems:'center'}}>
+            <View style={{width: 306, height: 172,backgroundColor:'#007BFF',borderRadius:10, display:'flex',justifyContent:'center',alignItems:'center'}}>
               <Text style={{color:'#fff',fontSize:48}}>{getDisplayText(title)}</Text>
               </View>
           ) : (
             <Image
               style={styles.image}
-              source={typeof image === 'string' ? {uri: getImageUrl(image)} : image}
+              source={typeof image === 'string' ? {uri: image} : image}
             />
           )}
         </Pressable>
@@ -77,7 +67,7 @@ export const CategoryCard = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    width: 330,
+    width: 306,
     display: 'flex',
     flexDirection: 'column',
     gap: 3,
@@ -94,8 +84,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   image: {
-    width: 330,
-    height: 200,
+    width: 306,
+    height: 172,
     borderRadius: 10,
     resizeMode: 'cover',
   },
@@ -113,7 +103,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   focused: {
-    borderWidth: 4,
+    borderWidth: 7,
     borderColor: 'white',
     borderRadius: 10,
   },
