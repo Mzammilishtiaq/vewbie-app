@@ -1,0 +1,1 @@
+export const BASE_URL = 'https://third-party.api.vewbie.com';
