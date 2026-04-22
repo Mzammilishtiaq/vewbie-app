@@ -2,3 +2,7 @@ declare module '*.png' {
   const content: number;
   export default content;
 }
+declare module '*.webp' {
+  const content: number;
+  export default content;
+}

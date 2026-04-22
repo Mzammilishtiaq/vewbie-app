@@ -1,169 +1,191 @@
-import {FlatList, StyleSheet, Text, View} from 'react-native';
-import React, {useEffect, useRef} from 'react';
+import {StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/CategoryList';
-import {Image, Modal, Pressable} from '@amazon-devices/react-native-kepler';
-
-import Imagec from '../assets/Upcoming.png';
+import ChannelList from '../components/ChannelList';
+import {
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+} from '@amazon-devices/react-native-kepler';
 
 import AngleRight from '../assets/icons/angle-right_icon.png';
+import {listCategoriesPatternsProps} from '../Types/interface';
 import {CategoryCard} from '../components/Cards/CategoryCard';
-import {NavigationProp} from '@amazon-devices/react-navigation__native';
-const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
-  const [modalVisible, setModalVisible] = React.useState(false);
-  const modalVisibleRef = useRef(false);
+import {
+  NavigationProp,
+  useRoute,
+} from '@amazon-devices/react-navigation__native';
+import {backendCall} from '../services/backendCall';
+import {useChannelStore} from '../store/channelStore';
+import Spinner from '../components/Spinner/Spinner';
 
-  const setModal = (val: boolean) => {
+const sortOptions = [
+  {
+    id: 1,
+    label: 'Latest Videos',
+    columnOrder: 'timestamp',
+    order: 'ASC',
+  },
+  {
+    id: 2,
+    label: 'Oldest Videos',
+    columnOrder: 'timestamp',
+    order: 'DESC',
+  },
+  {
+    id: 3,
+    label: 'A - Z',
+    columnOrder: 'category_name',
+    order: 'ASC',
+  },
+  {
+    id: 4,
+    label: 'Z - A',
+    columnOrder: 'category_name',
+    order: 'DESC',
+  },
+];
+const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
+  const route = useRoute();
+  const [modalVisible, setModalVisible] = useState(false);
+  const modalVisibleRef = useRef(false);
+  const [selectedSort, setSelectedSort] = useState(sortOptions[1]);
+  const [listCategoriesPatterns, setListCategoriesPatterns] = useState<
+    listCategoriesPatternsProps[]
+  >([]);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const selectedChannel = useChannelStore((s) => s.selectedChannel);
+
+  const setModal = useCallback((val: boolean) => {
     modalVisibleRef.current = val;
     setModalVisible(val);
-  };
+  }, []);
+
+  const FetchAllCategoryList = useCallback(() => {
+    if (!selectedChannel?.hostName) return;
+
+    setIsLoading(true);
+
+    backendCall({
+      url: `/list-categories-patterns?limit=100&offset=12&columnOrder=${selectedSort.columnOrder}&order=${selectedSort.order}`,
+      method: 'GET',
+      origin: selectedChannel.hostName,
+    })
+      .then((response) => {
+        setListCategoriesPatterns(response?.data || []);
+      })
+      .catch((error) => {
+        console.error('Error fetching data:', error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [selectedChannel, selectedSort]);
+
+  useEffect(() => {
+    FetchAllCategoryList();
+  }, [
+    FetchAllCategoryList,
+    selectedSort.columnOrder,
+    selectedSort.order,
+    selectedChannel,
+  ]);
+
+  const renderCategory = useCallback(
+    ({item, index}: {item: listCategoriesPatternsProps; index: number}) => (
+      <View style={styles.itemContainer}>
+        <CategoryCard
+          image={item.thumbnail ?? undefined}
+          title={item.categoryName}
+          SubCategory={item.subSategories}
+          onPress={() =>
+            navigation.navigate('SubCategory', {
+              slug: item.slug,
+              subSategories: item.subSategories,
+            })
+          }
+          hasTVPreferredFocus={index == 0}
+        />
+      </View>
+    ),
+    [navigation],
+  );
+
+  const renderSortItem = useCallback(
+    (item: {id: number; label: string; columnOrder: string; order: string}) => (
+      <Pressable
+        hasTVPreferredFocus={item.id === 1}
+        key={item.id}
+        onPress={() => {
+          setSelectedSort(item);
+          setModal(false);
+        }}
+        style={({focused}) => [
+          styles.sortItem,
+          focused && styles.sortItemFocused,
+        ]}>
+        <Text style={styles.sortText}>{item.label}</Text>
+      </Pressable>
+    ),
+    [setModal],
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <MainContainer>
         <View style={styles.subContainer}>
-          <CategoryList />
+          <ChannelList navigation={navigation} currentRoute={route.name} />
+
+          {/* HEADER */}
           <View style={styles.headerContainer}>
             <Text style={styles.categorytitle}>Category</Text>
+
             <View style={styles.sortContainer}>
-              <View style={styles.subcategorycontainer}>
-                <Text style={styles.subcategorytitle}>
-                  315 available categories and subcategories
-                </Text>
-              </View>
               <Pressable
                 onPress={() => setModal(true)}
                 style={({focused}) => [
                   styles.sortby,
                   focused && {backgroundColor: '#3366FD'},
                 ]}>
-                <Text style={styles.title}>Sort By</Text>
+                <Text style={styles.title}>Sort By: {selectedSort.label}</Text>
                 <Image source={AngleRight} style={styles.icon} />
               </Pressable>
             </View>
           </View>
 
-          <FlatList
-            data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-            keyExtractor={(index) => index.toString()}
-            renderItem={({item, index}) => (
-              <View style={styles.itemContainer}>
-                <CategoryCard
-                  image={Imagec}
-                  key={index}
-                  title="USSSA"
-                  SubCategory="86 subcategories"
-                  onPress={() => navigation.navigate('SubCategory')}
-                />
-              </View>
-            )}
-            numColumns={5}
-          />
+          {/* LIST */}
+          {isLoading ? (
+            <View style={styles.loaderOverlay}>
+              <Spinner />
+            </View>
+          ) : (
+            <FlatList
+              data={listCategoriesPatterns}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderCategory}
+              numColumns={5}
+              showsVerticalScrollIndicator
+              contentContainerStyle={styles.listContent}
+            />
+          )}
         </View>
 
+        {/* MODAL */}
         <Modal
           visible={modalVisible}
           transparent
           animationType="fade"
           onRequestClose={() => setModal(false)}>
           <View style={styles.overlay}>
-            <View
-              style={{
-                width: 400,
-                height: 1080,
-                backgroundColor: '#1B1927',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-start',
-                alignItems: 'center',
-                paddingHorizontal: 40,
-                paddingVertical: 100,
-              }}>
-              <View style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-                <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 34}}>
-                  Sort By
-                </Text>
-                <View
-                  style={{
-                    marginTop: 50,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 30,
-                    alignItems: 'center',
-                  }}>
-                  <Pressable
-                    style={({focused}) => [
-                      {
-                        paddingHorizontal: 20,
-                        paddingVertical: 10,
-                        width: 340,
-                        height: 66,
-                        borderRadius:8,
-                        display:'flex',
-                        alignItems:'center'
-                      },
-                      focused && {backgroundColor: 'rgba(217,217,217,0.1)'},
-                    ]}>
-                    <Text
-                      style={{color: '#fff', fontWeight: 'bold', fontSize: 28}}>
-                      Latest Videos
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={({focused}) => [
-                      {
-                        paddingHorizontal: 20,
-                        paddingVertical: 10,
-                        width: 340,
-                        height: 66,
-                        borderRadius:8,
-                        display:'flex',
-                        alignItems:'center'
-                      },
-                      focused && {backgroundColor: 'rgba(217,217,217,0.1)'},
-                    ]}>
-                    <Text
-                      style={{color: '#fff', fontWeight: 'bold', fontSize: 28}}>
-                      Older Videos
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={({focused}) => [
-                      {
-                        paddingHorizontal: 20,
-                        paddingVertical: 10,
-                        width: 340,
-                        height: 66,
-                        borderRadius:8,
-                        display:'flex',
-                        alignItems:'center'
-                      },
-                      focused && {backgroundColor: 'rgba(217,217,217,0.1)'},
-                    ]}>
-                    <Text
-                      style={{color: '#fff', fontWeight: 'bold', fontSize: 28}}>
-                      A to Z
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={({focused}) => [
-                      {
-                        paddingHorizontal: 20,
-                        paddingVertical: 10,
-                        width: 340,
-                        height: 66,
-                        borderRadius:8,
-                        display:'flex',
-                        alignItems:'center'
-                      },
-                      focused && {backgroundColor: 'rgba(217,217,217,0.1)'},
-                    ]}>
-                    <Text
-                      style={{color: '#fff', fontWeight: 'bold', fontSize: 28}}>
-                      Z to A
-                    </Text>
-                  </Pressable>
-                </View>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Sort By</Text>
+
+              <View style={styles.modalList}>
+                {sortOptions.map(renderSortItem)}
               </View>
             </View>
           </View>
@@ -180,65 +202,108 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1B1927',
   },
+
   subContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 30,
+    flex: 1,
     paddingHorizontal: 20,
-    paddingVerticral: 30,
+    gap: 30,
   },
+
   headerContainer: {
-    display: 'flex',
     flexDirection: 'column',
   },
+
   categorytitle: {
     fontSize: 34,
     fontWeight: 'bold',
     color: '#fff',
   },
-  subcategorycontainer: {},
-  subcategorytitle: {
-    fontSize: 24,
-    fontWeight: '400',
-    color: 'rgba(255,255,225,82)',
-  },
+
   sortContainer: {
-    display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
+
   sortby: {
     width: 310,
     height: 56,
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 50,
     paddingHorizontal: 10,
-    paddingVertical: 20,
     backgroundColor: 'rgba(217, 217, 217, 0.2)',
     borderRadius: 3,
   },
+
   icon: {
-    width: 39.5,
-    height: 34.22,
+    width: 39,
+    height: 34,
   },
+
   title: {
     fontSize: 20,
-    fontWeight: '400',
     color: '#fff',
   },
+
   itemContainer: {
     flex: 1,
     margin: 20,
   },
+
+  listContent: {
+    paddingBottom: 300,
+  },
+
+  loaderOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'flex-end',
     backgroundColor: '#110F1B',
-    opacity: 0.9,
+    opacity: 0.95,
+  },
+
+  modalContainer: {
+    width: 400,
+    height: '100%',
+    backgroundColor: '#1B1927',
+    paddingHorizontal: 40,
+    paddingVertical: 80,
+    alignItems: 'center',
+  },
+
+  modalTitle: {
+    color: '#fff',
+    fontSize: 34,
+    fontWeight: 'bold',
+    marginBottom: 40,
+  },
+
+  modalList: {
+    gap: 30,
+    alignItems: 'center',
+  },
+
+  sortItem: {
+    width: 340,
+    height: 66,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+
+  sortItemFocused: {
+    backgroundColor: 'rgba(217,217,217,0.1)',
+  },
+
+  sortText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
   },
 });

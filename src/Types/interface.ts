@@ -51,7 +51,7 @@ export interface RecentVideoItemProps {
       name: string;
       slug: string;
       thumbnail: string | null;
-    }
+    },
   ];
 }
 export interface ListAllPromotedCategoriesProps {
@@ -59,28 +59,115 @@ export interface ListAllPromotedCategoriesProps {
 }
 
 export interface PromotedCategoriesProps {
-    media: {
+  media: {
+    name: string;
+    slug: string;
+    timestamp: string;
+    description: string | null;
+    startDatetime: string | null;
+    type: 'VIDEO';
+    duration: string;
+    thumbnail: string;
+    isFree: boolean;
+    isPaid: boolean;
+    viewers: number;
+    channelHostName: string;
+    categories: {
+      id: number;
       name: string;
       slug: string;
-      timestamp: string;
-      description: string | null;
-      startDatetime: string | null;
-      type: 'VIDEO';
-      duration: string;
-      thumbnail: string;
-      isFree: boolean;
-      isPaid: boolean;
-      viewers: number;
-      channelHostName: string;
-      categories: {
-        id: number;
-        name: string;
-        slug: string;
-        totalVideos: string;
-      }[];
-      categorySlug: string;
-      categoryName: string;
-      layout: 'HORIZONTAL_4_BOXED';
-      subchannelId: number | null;
+      totalVideos: string;
     }[];
+    categorySlug: string;
+    categoryName: string;
+    layout: 'HORIZONTAL_4_BOXED';
+    subchannelId: number | null;
   }[];
+}
+[];
+
+export interface listCategoriesPatternsProps {
+  id: number;
+  categoryName: string;
+  layout: string;
+  parentId: number | null;
+  promoted: number; // 0 or 1
+  slug: string;
+  createdAt: string; // ISO date string
+  subchannelId: number;
+  hostName: string;
+  domainName: string | null;
+  subSategories: string; // looks like string "0"
+  thumbnail: string | null;
+  optimized: any | null;
+  online: boolean;
+}
+
+export interface SubCategoriesSlugProps {
+  id: number;
+  categoryName: string;
+  categorySlug: string;
+  categoryThumbnail: string | null;
+  subchannelId: number | null;
+  videos: string; // ⚠️ comes as string from API
+  subchannelUrl: string | null;
+  subchannelLogo: string | null;
+}
+
+export interface VideoSlugItemProps {
+  title: string;
+  slug: string;
+  type: 'VIDEO' | string;
+  thumbnail: string;
+  duration: string;
+  redirectMediaUrl: string;
+  isFree: boolean;
+  mediaId: string;
+  stream: string | null;
+  timestamp: string; // ISO date string
+}
+
+export interface VideoDetailItemProps {
+  id: number;
+  media_id: string;
+  title: string;
+  price: string;
+  duration: string;
+  loginRequired: boolean;
+  isFree: boolean;
+  isPaid: boolean;
+  isVideo: boolean;
+  description: string;
+  timestamp: string; // ISO date string
+  isAds: boolean;
+  type: string;
+  isFav: number;
+  subscriptions: {
+    id: string;
+    name: string;
+    price: string;
+    type: string;
+  }[];
+  categories: {
+    id: number;
+    name: string;
+    slug: string;
+  }[];
+  playerSettings: {
+    poster_url: string;
+    isMediaAds: string; // e.g. "PRE_ROLL"
+    adsIntervalTime: number;
+  };
+}
+
+export interface RelatedVideoItemProps {
+  id: number;
+  mediaId: string;
+  slug: string;
+  type: string; // or "VIDEO" | "LIVE" | "AUDIO" if you want strict typing
+  name: string;
+  description: string;
+  timestamp: string;
+  duration: string;
+  thumbnail: string;
+}

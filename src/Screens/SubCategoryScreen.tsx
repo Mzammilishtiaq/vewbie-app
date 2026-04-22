@@ -1,29 +1,75 @@
 import {StyleSheet, Text, View} from 'react-native';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/CategoryList';
+import CategoryList from '../components/ChannelList';
 import {
   FlatList,
   Image,
   Modal,
   Pressable,
-  ScrollView,
 } from '@amazon-devices/react-native-kepler';
-
 import ArrowIcon from '../assets/icons/angle-right_icon.png';
-import Imageimg from '../assets/image.png';
-
+import {SubCategoriesSlugProps, VideoSlugItemProps} from '../Types/interface';
 import SubCategoryCard from '../components/Cards/SubCategoryCard';
 import {VideoCard} from '../components/Cards/VideoCard';
-const SubCategoryScreen = () => {
+import {
+  NavigationProp,
+  RouteProp,
+} from '@amazon-devices/react-navigation__native';
+import {RootStackParamList} from '../Types/navigations';
+import {backendCall} from '../services/backendCall';
+import {useChannelStore} from '../store/channelStore';
+
+type Props = {
+  route: RouteProp<RootStackParamList, 'SubCategory'>;
+  navigation: NavigationProp<any>;
+};
+
+const SubCategoryScreen = ({route, navigation}: Props) => {
+  const {slug, subCategories} = route.params;
   const [modalVisible, setModalVisible] = React.useState(false);
   const modalVisibleRef = React.useRef(false);
-
+  const selectedChannel = useChannelStore((s) => s.selectedChannel);
+  const [isloading, setIsLoading] = useState(false);
+  const [SubCategoriesSlugItem, setSubCategoriesSlugItem] = useState<
+    SubCategoriesSlugProps[]
+  >([]);
+  const [VideoSlugItem, setVideoSlugItem] = useState<VideoSlugItemProps[]>([]);
   const setModal = (val: boolean) => {
     modalVisibleRef.current = val;
     setModalVisible(val);
   };
+
+  const fetchData = async () => {
+    if (!selectedChannel?.hostName) return;
+    setIsLoading(true);
+    try {
+      const [subcategorydata, videodata] = await Promise.all([
+        backendCall({
+          url: `/sub-categories/${slug}`,
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+        backendCall({
+          url: `/categories/${slug}/videos?limit=15&offset=0&start_date=null&end_date=null&search=&columnOrder=timestamp&order=desc`,
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+      ]);
+
+      setSubCategoriesSlugItem(subcategorydata?.data || []);
+      setVideoSlugItem(videodata?.data || []);
+      console.log('videos', videodata?.data);
+    } catch (e) {
+      console.log('API ERROR:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchData();
+  }, [selectedChannel, slug]);
   return (
     <SafeAreaView
       edges={['top']}
@@ -39,7 +85,7 @@ const SubCategoryScreen = () => {
             flexDirection: 'column',
             gap: 50,
           }}>
-          <CategoryList />
+          <CategoryList navigation={navigation} currentRoute={route.name} />
           <View
             style={{
               display: 'flex',
@@ -62,7 +108,7 @@ const SubCategoryScreen = () => {
                   color: '#fff',
                   fontWeight: '600',
                 }}>
-                76 subcategories | 1170 videos | 4784 tags
+                {subCategories} subcategories | 1170 videos | 4784 tags
               </Text>
             </View>
             <View
@@ -90,7 +136,7 @@ const SubCategoryScreen = () => {
                 </Text>
               </Pressable>
               <Pressable
-              onPress={() => setModal(true)}
+                onPress={() => setModal(true)}
                 style={{
                   width: 310,
                   height: 56,
@@ -118,26 +164,22 @@ const SubCategoryScreen = () => {
               </Pressable>
             </View>
           </View>
-          <ScrollView horizontal>
-            <FlatList
-              data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-              keyExtractor={(index) => index.toString()}
-              contentContainerStyle={{
-                flexDirection: 'row',
-              }}
-              showsHorizontalScrollIndicator={false}
-              scrollEnabled={false}
-              renderItem={({item, index}) => (
-                <View
-                  style={{
-                    flex: 1,
-                    margin: 10,
-                  }}>
-                  <SubCategoryCard />
-                </View>
-              )}
-            />
-          </ScrollView>
+          <FlatList
+            horizontal
+            data={SubCategoriesSlugItem}
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerStyle={{flexDirection: 'row'}}
+            scrollEnabled={true}
+            renderItem={({item}) => (
+              <View style={{margin: 10}}>
+                <SubCategoryCard
+                  image={item.subchannelLogo || undefined}
+                  title={item.categoryName}
+                  totalvideo={item.videos}
+                />
+              </View>
+            )}
+          />
           <View
             style={{
               display: 'flex',
@@ -154,21 +196,23 @@ const SubCategoryScreen = () => {
             </Text>
 
             <FlatList
-              data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-              keyExtractor={(index) => index.toString()}
-              renderItem={({item, index}) => (
-                <View style={{flex: 1, margin: 10}}>
+              data={VideoSlugItem}
+              keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={{paddingBottom: 300}}
+              numColumns={5}
+              showsVerticalScrollIndicator
+              renderItem={({item}) => (
+                <View style={{margin: 10}}>
                   <VideoCard
-                    image={Imageimg}
-                    title="Blue Marucci - Space Coast Super NIT
-10 Maj (2024)"
-                    date="03/23/24"
-                    time="05:15 PM"
-                    videotime="01:47:48"
+                    title={item?.title}
+                    image={item?.thumbnail}
+                    videotime={item?.duration}
+                    onPress={() =>
+                      navigation.navigate('VideoDetail', {slug: item.slug})
+                    }
                   />
                 </View>
               )}
-              numColumns={5}
             />
           </View>
         </View>
@@ -293,5 +337,3 @@ const SubCategoryScreen = () => {
 };
 
 export default SubCategoryScreen;
-
-const styles = StyleSheet.create({});

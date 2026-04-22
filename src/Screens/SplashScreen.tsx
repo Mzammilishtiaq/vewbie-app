@@ -26,7 +26,7 @@ const SplashScreen = ({navigation}: Props) => {
     ).start();
     setTimeout(() => {
       navigation.replace('Home'); // go to Home screen
-    }, 3000);
+    }, 1000);
   }, []);
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

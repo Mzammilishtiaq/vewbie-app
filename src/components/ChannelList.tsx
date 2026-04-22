@@ -5,8 +5,19 @@ import {backendCall} from '../services/backendCall';
 import {CategoryItem, useChannelStore} from '../store/channelStore';
 import CategoryPress from '../assets/images/category-press.png';
 import CategoryFocus from '../assets/images/category-focus.png';
+import {
+  NavigationProp,
+  useNavigationState,
+} from '@amazon-devices/react-navigation__native';
 
-const CategoryList = () => {
+export interface ChannelListProps {
+  navigation?: NavigationProp<any>;
+  currentRoute?: string;
+}
+const ChannelList = ({navigation, currentRoute}: ChannelListProps) => {
+  const routeName = useNavigationState(
+    (state) => state.routes[state.index].name,
+  );
   const flatListRef = React.useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = React.useState(0); // focused index
   const [items, setItems] = React.useState<CategoryItem[]>([]);
@@ -37,9 +48,8 @@ const CategoryList = () => {
   React.useEffect(() => {
     fetchCategories();
   }, []);
-React.useEffect(() => {
+  React.useEffect(() => {
     loadChannel();
-    
   }, []);
 
   const renderItem = ({item, index}: {item: CategoryItem; index: number}) => {
@@ -47,17 +57,22 @@ React.useEffect(() => {
     const isFocused = activeIndex === index;
     return (
       <Pressable
-        hasTVPreferredFocus={index === 0}
         onFocus={() => {
           setActiveIndex(index);
-          flatListRef.current?.scrollToIndex({
-            index,
-            animated: true,
-            viewPosition: 0.5,
-          });
+
+          if (items.length > 0 && index < items.length) {
+            flatListRef.current?.scrollToIndex({
+              index,
+              animated: true,
+              viewPosition: 0.5,
+            });
+          }
         }}
         onPress={() => {
           setChannel(item); // 🔥 toggle handled in store
+          if (routeName !== 'Home') {
+            navigation?.navigate('Home');
+          }
         }}
         style={({pressed}) => [styles.card, pressed && styles.presseItem]}>
         <>
@@ -101,7 +116,7 @@ const styles = StyleSheet.create({
     width: 75,
     height: 75,
     resizeMode: 'cover',
-    margin:12
+    margin: 12,
   },
   overlay: {
     position: 'absolute',
@@ -115,4 +130,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CategoryList;
+export default ChannelList;

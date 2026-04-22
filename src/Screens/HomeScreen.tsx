@@ -2,7 +2,7 @@ import {View, Text, StyleSheet} from 'react-native';
 import React, {useState, useEffect, useRef} from 'react';
 import MainContainer from '../Container/MainContainer';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
-import CategoryList from '../components/CategoryList';
+import CategoryList from '../components/ChannelList';
 import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import {RootStackParamList} from '../Types/navigations';
 import {useNavigation} from '@amazon-devices/react-navigation__native';
@@ -11,7 +11,7 @@ import {FlatList} from '@amazon-devices/react-native-kepler';
 import {VideoCard} from '../components/Cards/VideoCard';
 import {CategoryCard} from '../components/Cards/CategoryCard';
 import Spinner from '../components/Spinner/Spinner';
-
+import {SeeMoreCard as SeeMore} from '../components/Cards/SeeMore';
 import {backendCall} from '../services/backendCall';
 import {useChannelStore} from '../store/channelStore';
 import {
@@ -21,13 +21,14 @@ import {
   PromotedCategoriesProps,
   RecentVideoItemProps,
 } from '../Types/interface';
+import {LiveCard} from '../components/Cards/LiveCard';
 type HomeNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeNavigationProp>();
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
   const selectedChannelload = useChannelStore((s) => s.loadChannel);
-
+  const [listalllivesItem, setlistalllivesItem] = useState([]);
   const [ScheduleEventsItem, SetScheduleEventsItem] = useState<
     EventItemProps[]
   >([]);
@@ -56,37 +57,47 @@ const HomeScreen = () => {
     if (!selectedChannel?.hostName) return;
     setIsLoading(true);
     try {
-      const [schedule, categories, recent, mostViewed, promotedIds] =
-        await Promise.all([
-          backendCall({
-            url: '/get-schedule-events?limit=10&offset=0',
-            method: 'GET',
-            origin: selectedChannel.hostName,
-          }),
-          backendCall({
-            url: '/list-all-categories',
-            method: 'GET',
-            origin: selectedChannel.hostName,
-          }),
-          backendCall({
-            url: '/recent-videos',
-            method: 'GET',
-            origin: selectedChannel.hostName,
-          }),
-          backendCall({
-            url: '/most-viewed-videos',
-            method: 'GET',
-            origin: selectedChannel.hostName,
-          }),
-          backendCall({
-            url: '/list-all-promoted-categories',
-            method: 'GET',
-            origin: selectedChannel.hostName,
-          }),
-        ]);
+      const [
+        listalllives,
+        schedule,
+        categories,
+        recent,
+        mostViewed,
+        promotedIds,
+      ] = await Promise.all([
+        backendCall({
+          url: '/list-all-lives',
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+        backendCall({
+          url: '/get-schedule-events?limit=10&offset=0',
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+        backendCall({
+          url: '/list-all-categories',
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+        backendCall({
+          url: '/recent-videos',
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+        backendCall({
+          url: '/most-viewed-videos',
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+        backendCall({
+          url: '/list-all-promoted-categories',
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        }),
+      ]);
 
-        console.log('schedule',schedule?.data)
-        console.log('category',categories?.data)
+      setlistalllivesItem(listalllives?.data || []);
       SetScheduleEventsItem(schedule?.data || []);
       setCategoryAllListItem(categories?.data || []);
       setRecentVideoItem(recent?.data || []);
@@ -181,6 +192,7 @@ const HomeScreen = () => {
   // ================= SECTIONS =================
 
   const sections = [
+    {type: 'listalllives', data: listalllivesItem},
     {type: 'upcoming', data: ScheduleEventsItem},
     {type: 'categories', data: CategoryalllistItem},
     {type: 'recent', data: RecentVideoItem},
@@ -192,6 +204,27 @@ const HomeScreen = () => {
 
   const renderSection = ({item}: any) => {
     switch (item.type) {
+      case 'listalllives':
+        if (!item.data.length) return null;
+        return (
+          <View style={styles.cardheader}>
+            <Text style={styles.liveText}>Live Stream</Text>
+            <FlatList
+              data={item.data}
+              horizontal
+              keyExtractor={(i) => i.mediaId.toString()}
+              renderItem={({item}) => (
+                <LiveCard
+                  title={item.name}
+                  image={item.thumbnail}
+                  liveBadge={item.online}
+                />
+              )}
+              ItemSeparatorComponent={() => <View style={{width: 12}} />}
+            />
+          </View>
+        );
+
       case 'upcoming':
         if (!item.data.length) return null;
         return (
@@ -206,6 +239,7 @@ const HomeScreen = () => {
                   title={item.name}
                   image={item.thumbnail}
                   Startdate={item.startDatetime}
+                  onPress={() => navigation.navigate('VideoDetail',{slug:item.slug})}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
@@ -215,6 +249,7 @@ const HomeScreen = () => {
 
       case 'categories':
         if (!item.data.length) return null;
+        const slicedData = item.data.slice(0, 10);
         return (
           <View style={styles.cardheader}>
             <Text style={styles.liveText}>Categories</Text>
@@ -222,8 +257,29 @@ const HomeScreen = () => {
               data={item.data.slice(0, 10)}
               horizontal
               keyExtractor={(i) => i.id.toString()}
-              renderItem={({item}) => (
-                <CategoryCard image={item.thumbnail} title={item.name} />
+              renderItem={({item, index}) => (
+                <View style={{flexDirection: 'row'}}>
+                  {/* Category Card */}
+                  <CategoryCard
+                    image={item.thumbnail}
+                    title={item.name}
+                    onPress={() => {
+                      navigation.navigate('SubCategory', {
+                        slug: item.slug,
+                        subCategories: item.subSategories,
+                      });
+                    }}
+                  />
+
+                  {/* 👇 Last item ke baad SeeMore */}
+                  {index === slicedData.length - 1 && (
+                    <View style={{marginLeft: 10}}>
+                      <SeeMore
+                        onPress={() => navigation.navigate('Category')}
+                      />
+                    </View>
+                  )}
+                </View>
               )}
               ItemSeparatorComponent={() => <View style={{width: 10}} />}
             />
@@ -245,6 +301,7 @@ const HomeScreen = () => {
                   title={item.name}
                   Startdate={item.timestamp}
                   videotime={item.duration}
+                  onPress={() => navigation.navigate('VideoDetail',{slug:item.slug})}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
@@ -294,6 +351,7 @@ const HomeScreen = () => {
                   title={item.name}
                   Startdate={item.timestamp}
                   videotime={item.duration}
+                  onPress={() => navigation.navigate('VideoDetail',{slug:item.slug})}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
@@ -312,7 +370,9 @@ const HomeScreen = () => {
         <View style={styles.subContainer}>
           <CategoryList />
 
-          <Text style={styles.MainTitle}>Welcome to the Home Screen!</Text>
+          <Text style={styles.MainTitle}>
+            Welcome to the {selectedChannel?.name}
+          </Text>
 
           {isLoading ? (
             <View style={styles.loaderOverlay}>
@@ -363,7 +423,8 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   cardheader: {
-    gap: 10,
+    gap: 15,
+    paddingBottom: 20,
   },
   loaderOverlay: {
     position: 'absolute',

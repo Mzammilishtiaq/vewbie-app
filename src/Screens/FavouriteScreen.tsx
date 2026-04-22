@@ -2,7 +2,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import React from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/CategoryList';
+import CategoryList from '../components/ChannelList';
 import {
   FlatList,
   Image,

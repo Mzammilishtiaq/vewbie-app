@@ -2,7 +2,7 @@ import {View, Text, StyleSheet} from 'react-native';
 import React, {useState} from 'react';
 import MainContainer from '../Container/MainContainer';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
-import CategoryList from '../components/CategoryList';
+import CategoryList from '../components/ChannelList';
 import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import {RootStackParamList} from '../Types/navigations';
 import {useNavigation} from '@amazon-devices/react-navigation__native';

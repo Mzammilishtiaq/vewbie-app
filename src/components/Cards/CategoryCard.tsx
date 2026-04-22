@@ -9,6 +9,7 @@ interface CardProps {
   image?: string | number;
   onPress?: () => void;
   onFocus?: () => void;
+  hasTVPreferredFocus?:boolean
 }
 
 const getDisplayText = (title?: string) => {
@@ -34,23 +35,33 @@ export const CategoryCard = ({
   image,
   onPress,
   onFocus,
+  hasTVPreferredFocus
 }: CardProps) => {
   const [isFocused, setIsFocused] = React.useState(false);
   return (
     <View style={styles.cardContainer}>
       <View style={{position: 'relative'}}>
         <Pressable
+        hasTVPreferredFocus={hasTVPreferredFocus}
           onPress={onPress}
           onFocus={onFocus}
           onBlur={() => setIsFocused(false)}
-          style={({focused}) => [
-            styles.pressable,
-            focused && styles.focused,
-          ]}>
+          style={({focused}) => [styles.pressable, focused && styles.focused]}>
           {image == null ? (
-            <View style={{width: 306, height: 172,backgroundColor:'#007BFF',borderRadius:10, display:'flex',justifyContent:'center',alignItems:'center'}}>
-              <Text style={{color:'#fff',fontSize:48}}>{getDisplayText(title)}</Text>
-              </View>
+            <View
+              style={{
+                width: 306,
+                height: 172,
+                backgroundColor: '#007BFF',
+                borderRadius: 10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#fff', fontSize: 48}}>
+                {getDisplayText(title)}
+              </Text>
+            </View>
           ) : (
             <Image
               style={styles.image}
@@ -60,7 +71,9 @@ export const CategoryCard = ({
         </Pressable>
       </View>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{SubCategory}</Text>
+      {!!SubCategory && SubCategory !== 'undefined' && (
+        <Text style={styles.subtitle}>{SubCategory} subcategories</Text>
+      )}
     </View>
   );
 };

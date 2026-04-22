@@ -3,9 +3,9 @@ export type RootStackParamList = {
   Home: undefined;
   Search: undefined;
   Category: undefined;
-  SubCategory: undefined;
+  SubCategory: {slug?: string; subCategories?: string};
   Favorite: undefined;
-  VideoDetail: {videoId: string};
+  VideoDetail: {slug?: string};
   Settings: undefined;
   Login: undefined;
   Signup: undefined;

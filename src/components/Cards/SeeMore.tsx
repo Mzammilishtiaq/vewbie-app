@@ -1,15 +1,15 @@
 import {View, Text, Image, StyleSheet} from 'react-native';
 import React from 'react';
-import seemore from '../assets/icons/see-more-icon.png';
 import {Pressable} from '@amazon-devices/react-native-kepler';
-import SeeMoreimage from '../../assets/icons/see-more-icon.png'
+import SeeMoreimage from '../../assets/icons/see-more-icon.png';
 
 interface SeeMoreCardProps {
   onPress?: () => void;
+  textname?: string;
 }
-export const SeeMoreCard = ({onPress}: SeeMoreCardProps) => {
+export const SeeMoreCard = ({onPress, textname}: SeeMoreCardProps) => {
   const [isFocused, setIsFocused] = React.useState(false);
-const arrow = ">>";
+  const arrow = '>>';
   return (
     <View>
       <Pressable
@@ -26,15 +26,20 @@ const arrow = ">>";
           <Text style={styles.seeMoreText}>See More</Text>
         </View>
       </Pressable>
-      <Text style={styles.seeMoreTextContainer}>Seemore{arrow}</Text>
+      {textname && (
+        <Text style={styles.seeMoreTextContainer}>
+          {textname}
+          {arrow}
+        </Text>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   SeeMoreCardContainer: {
-    width: 330,
-    height: 200,
+    width: 306,
+    height: 172,
     backgroundColor: '#2B2B2B',
     display: 'flex',
     flexDirection: 'column',
@@ -58,7 +63,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: '#fff',
     marginTop: 10,
-    fontWeight: '600',
+    fontWeight: '400',
     textAlign: 'left',
   },
   pressable: {
