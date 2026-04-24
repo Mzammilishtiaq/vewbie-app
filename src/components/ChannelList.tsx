@@ -37,7 +37,6 @@ const ChannelList = ({navigation, currentRoute}: ChannelListProps) => {
       const data = res?.data || [];
 
       setItems(data);
-      console.log(data);
     } catch (err: any) {
       console.log('API Error:', err.message);
     } finally {

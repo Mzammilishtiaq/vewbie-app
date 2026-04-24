@@ -171,3 +171,13 @@ export interface RelatedVideoItemProps {
   duration: string;
   thumbnail: string;
 }
+
+export interface SubscriptionProps {
+  slug: string;
+  price: number;
+  billingFrequency: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
+  subscriberStartDate: Date;
+  subscriberEndDate: Date;
+  hostName: string;
+  isRecurring: boolean;
+}

@@ -106,6 +106,7 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
             navigation.navigate('SubCategory', {
               slug: item.slug,
               subSategories: item.subSategories,
+              CategoryName:item?.categoryName
             })
           }
           hasTVPreferredFocus={index == 0}
@@ -142,7 +143,7 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
 
           {/* HEADER */}
           <View style={styles.headerContainer}>
-            <Text style={styles.categorytitle}>Category</Text>
+            <Text style={styles.categorytitle}>Categories</Text>
 
             <View style={styles.sortContainer}>
               <Pressable

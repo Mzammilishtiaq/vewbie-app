@@ -267,6 +267,7 @@ const HomeScreen = () => {
                       navigation.navigate('SubCategory', {
                         slug: item.slug,
                         subCategories: item.subSategories,
+                        CategoryName: item.name
                       });
                     }}
                   />

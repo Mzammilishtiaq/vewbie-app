@@ -31,6 +31,7 @@
     "@amazon-devices/react-navigation__routers": "~2.0.0",
     "@amazon-devices/react-navigation__stack": "~2.0.0",
     "@react-native-async-storage/async-storage": "^1.23.1",
+    "@amazon-devices/react-native-device-info": "~2.0.0",
     "axios": "^1.15.0",
     "dayjs": "^1.11.20",
     "react-native-gesture-handler": "~2.13.0",

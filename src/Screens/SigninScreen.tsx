@@ -6,7 +6,6 @@ import Logo from '../assets/images/logo.png';
 import UsePhone from '../components/SigninComponent/UsePhone';
 import UseRemote from '../components/SigninComponent/UseRemote';
 import {NavigationProp} from '@amazon-devices/react-navigation__native';
-
 const SigninScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
   const [ActiveTab, setActiveTab] = React.useState<'usephone' | 'useremote'>(
     'usephone',

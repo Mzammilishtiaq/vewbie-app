@@ -1,9 +1,84 @@
 import {View, Text} from 'react-native';
-import React from 'react';
+import React, {useState} from 'react';
 import QRCode from '@amazon-devices/react-native-qrcode-svg';
 import LinearGradient from '@amazon-devices/react-linear-gradient';
+import {useNavigation} from '@amazon-devices/react-navigation__native';
+import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
+import {useChannelStore} from '../../store/channelStore';
+import {getVegaInfo} from '../../utility/deviceUtils';
+import {backendCall} from '../../services/backendCall';
+import {useAuthStore} from '../../store/authStore';
+import {RootStackParamList} from '../../Types/navigations';
+import Spinner from '../Spinner/Spinner';
+
+type UsePhoneNavigationProp = StackNavigationProp<RootStackParamList>;
+
 const UsePhone = () => {
-  const code = 'JSD33E';
+  const {loadChannel, selectedChannel} = useChannelStore();
+  const login = useAuthStore((state) => state.login);
+  const navigation = useNavigation<UsePhoneNavigationProp>();
+  const {deviceId} = getVegaInfo();
+  const [GenerateCode, setGenerateCode] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  React.useEffect(() => {
+    const fetchGenerateCode = async () => {
+      if (!selectedChannel?.hostName) {
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const response = await backendCall({
+          url: '/generate-code',
+          method: 'POST',
+          origin: selectedChannel.hostName,
+          data: {deviceId},
+        });
+        setGenerateCode(String(response?.data?.authCode ?? ''));
+        console.log('response', response?.data?.authCode);
+      } catch (error) {
+        console.error('Error fetching:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGenerateCode();
+  }, [selectedChannel?.hostName, deviceId]);
+
+React.useEffect(() => {
+  if (!GenerateCode || !selectedChannel?.hostName) return;
+
+  const interval = setInterval(async () => {
+    try {
+      const response = await backendCall({
+        url: '/verify-code',
+        method: 'POST',
+        origin: selectedChannel.hostName,
+        data: { deviceId, authCode: GenerateCode },
+      });
+
+      console.log('verify response', response);
+
+      const token = response?.data?.token;
+
+      if (token) {
+        clearInterval(interval);
+        await login(response.data);
+        navigation.navigate('Home');
+      }
+
+    } catch (error) {
+      console.error('Verification error:', error);
+    }
+  },5000);
+
+  // ✅ proper cleanup
+  return () => clearInterval(interval);
+
+}, [GenerateCode, selectedChannel?.hostName, deviceId]);
+  React.useEffect(() => {
+    loadChannel();
+  }, []);
   return (
     <View
       style={{
@@ -71,7 +146,7 @@ const UsePhone = () => {
               fontWeight: '500',
               color: '#3366FD',
             }}>
-            vewbie.com/activate
+            {`vewbie.com/channel/${selectedChannel?.hostName}/activate`}
           </Text>
         </View>
         <View
@@ -79,7 +154,11 @@ const UsePhone = () => {
             padding: 15,
             backgroundColor: '#FFFFFF',
           }}>
-          <QRCode value="https://vewbie.com/tv-login" size={139} color="#000" />
+          <QRCode
+            value={`https://vewbie.com/channel/${selectedChannel?.hostName}/activate`}
+            size={139}
+            color="#000"
+          />
         </View>
       </LinearGradient>
 
@@ -133,8 +212,9 @@ const UsePhone = () => {
             flexDirection: 'row',
             gap: 20,
           }}>
-          {code.split('').map((char, index) => (
+          {(GenerateCode || '').split('').map((char, index) => (
             <View
+              key={index}
               style={{
                 width: 80,
                 height: 80,
@@ -156,6 +236,19 @@ const UsePhone = () => {
           ))}
         </View>
       </LinearGradient>
+      <View
+        style={{
+          flex: 1,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        {isLoading && <Spinner />}
+      </View>
     </View>
   );
 };

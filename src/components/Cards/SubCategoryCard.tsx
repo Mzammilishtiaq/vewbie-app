@@ -9,6 +9,7 @@ interface SubCategoryProps {
   totalvideo?: string;
   onPress?: () => void;
   onFocus?: () => void;
+  hasTVPreferredFocus?: boolean;
 }
 const SubCategoryCard = ({
   image,
@@ -16,6 +17,7 @@ const SubCategoryCard = ({
   totalvideo,
   onFocus,
   onPress,
+  hasTVPreferredFocus,
 }: SubCategoryProps) => {
   const [isFocused, setIsFocused] = React.useState(false);
   const getDisplayText = (title?: string) => {
@@ -42,6 +44,7 @@ const SubCategoryCard = ({
       }}
       onBlur={() => setIsFocused(false)}
       onPress={onPress}
+      hasTVPreferredFocus={hasTVPreferredFocus}
       style={({focused}) => [
         {
           width: 393,
@@ -61,13 +64,13 @@ const SubCategoryCard = ({
           style={{
             width: 69,
             height: 69,
-            backgroundColor: '#007BFF',
+            backgroundColor: '#010570',
             borderRadius: 10,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
           }}>
-          <Text style={{color: '#fff', fontSize: 30}}>
+          <Text style={{color: '#fff', fontSize: 25}}>
             {getDisplayText(title)}
           </Text>
         </View>
@@ -90,7 +93,7 @@ const SubCategoryCard = ({
         }}>
         <Text
           style={{
-            fontSize: 25,
+            fontSize: 20,
             fontWeight: '500',
             color: isFocused ? '#000' : '#fff',
           }}>

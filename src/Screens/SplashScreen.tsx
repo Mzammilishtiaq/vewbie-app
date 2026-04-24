@@ -32,10 +32,7 @@ const SplashScreen = ({navigation}: Props) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Image source={SplashLogo} style={styles.SplashLogo} />
       <View style={styles.loader}>
-        <Animated.Image
-          source={Spinner}
-          style={[styles.spinner, {transform: [{rotate}]}]}
-        />
+        <Animated.View style={[styles.spinner, {transform: [{rotate}]}]} />
       </View>
     </SafeAreaView>
   );
@@ -56,9 +53,12 @@ const styles = StyleSheet.create({
     bottom: 100,
   },
   spinner: {
-    width: 50,
-    height: 50,
-    marginTop: 20,
+    width: 45,
+    height: 45,
+    borderWidth: 6,
+    borderColor: 'rgba(255,255,255,0.2)', // light circle
+    borderTopColor: '#ffffff', // active arc (this creates spinner effect)
+    borderRadius: 50,
   },
 });
 export default SplashScreen;

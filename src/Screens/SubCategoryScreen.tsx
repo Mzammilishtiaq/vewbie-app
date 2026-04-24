@@ -27,7 +27,7 @@ type Props = {
 };
 
 const SubCategoryScreen = ({route, navigation}: Props) => {
-  const {slug, subCategories} = route.params;
+  const {slug, subCategories, CategoryName} = route.params;
   const [modalVisible, setModalVisible] = React.useState(false);
   const modalVisibleRef = React.useRef(false);
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
@@ -99,8 +99,9 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
                   fontSize: 34,
                   color: '#fff',
                   fontWeight: 'bold',
+                  textTransform: 'capitalize',
                 }}>
-                Baseball
+                {CategoryName}
               </Text>
               <Text
                 style={{
@@ -108,7 +109,8 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
                   color: '#fff',
                   fontWeight: '600',
                 }}>
-                {subCategories} subcategories | 1170 videos | 4784 tags
+                {SubCategoriesSlugItem?.length} subcategories |
+                {VideoSlugItem?.length ?? 0} videos | 0 tags
               </Text>
             </View>
             <View
@@ -170,12 +172,13 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
             keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={{flexDirection: 'row'}}
             scrollEnabled={true}
-            renderItem={({item}) => (
+            renderItem={({item, index}) => (
               <View style={{margin: 10}}>
                 <SubCategoryCard
                   image={item.subchannelLogo || undefined}
                   title={item.categoryName}
                   totalvideo={item.videos}
+                  hasTVPreferredFocus={index == 0}
                 />
               </View>
             )}
@@ -195,25 +198,40 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
               Videos
             </Text>
 
-            <FlatList
-              data={VideoSlugItem}
-              keyExtractor={(item, index) => index.toString()}
-              contentContainerStyle={{paddingBottom: 300}}
-              numColumns={5}
-              showsVerticalScrollIndicator
-              renderItem={({item}) => (
-                <View style={{margin: 10}}>
-                  <VideoCard
-                    title={item?.title}
-                    image={item?.thumbnail}
-                    videotime={item?.duration}
-                    onPress={() =>
-                      navigation.navigate('VideoDetail', {slug: item.slug})
-                    }
-                  />
-                </View>
-              )}
-            />
+            {VideoSlugItem.length === 0 ? (
+              <View
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flex: 1,
+                  marginTop: 100,
+                }}>
+                <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 50}}>
+                  Video Not Found
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={VideoSlugItem}
+                keyExtractor={(item, index) => index.toString()}
+                contentContainerStyle={{paddingBottom: 300}}
+                numColumns={5}
+                showsVerticalScrollIndicator
+                renderItem={({item}) => (
+                  <View style={{margin: 10}}>
+                    <VideoCard
+                      title={item?.title}
+                      image={item?.thumbnail}
+                      videotime={item?.duration}
+                      onPress={() =>
+                        navigation.navigate('VideoDetail', {slug: item.slug})
+                      }
+                    />
+                  </View>
+                )}
+              />
+            )}
           </View>
         </View>
 

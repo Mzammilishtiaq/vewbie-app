@@ -1,5 +1,5 @@
-import { Animated, StyleSheet, Text, View,Image } from 'react-native'
-import React from 'react'
+import {Animated, StyleSheet, Text, View, Image} from 'react-native';
+import React from 'react';
 import SpinnerImage from '../../assets/icons/spinner.png';
 
 const Spinner = () => {
@@ -11,7 +11,7 @@ const Spinner = () => {
         toValue: 1,
         duration: 1000,
         useNativeDriver: true,
-      })
+      }),
     ).start();
   }, [spinValue]);
 
@@ -22,24 +22,24 @@ const Spinner = () => {
 
   return (
     <View style={styles.loader}>
-            <Animated.Image
-              source={SpinnerImage}
-              style={[styles.spinner, {transform: [{rotate}]}]}
-            />
-          </View>
-  )
-}
+      <Animated.View style={[styles.spinner, {transform: [{rotate}]}]} />
+    </View>
+  );
+};
 
-export default Spinner
+export default Spinner;
 
 const styles = StyleSheet.create({
-      loader: {
+  loader: {
     position: 'absolute',
     bottom: 100,
   },
   spinner: {
-    width: 50,
-    height: 50,
-    marginTop: 20,
+    width: 45,
+    height: 45,
+    borderWidth: 6,
+    borderColor: 'rgba(255,255,255,0.2)', // light circle
+    borderTopColor: '#ffffff', // active arc (this creates spinner effect)
+    borderRadius: 50,
   },
-})
+});
