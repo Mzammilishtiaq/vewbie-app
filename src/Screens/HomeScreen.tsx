@@ -1,11 +1,14 @@
 import {View, Text, StyleSheet} from 'react-native';
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import MainContainer from '../Container/MainContainer';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import CategoryList from '../components/ChannelList';
 import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import {RootStackParamList} from '../Types/navigations';
-import {useNavigation} from '@amazon-devices/react-navigation__native';
+import {
+  useFocusEffect,
+  useNavigation,
+} from '@amazon-devices/react-navigation__native';
 import {FlatList} from '@amazon-devices/react-native-kepler';
 
 import {VideoCard} from '../components/Cards/VideoCard';
@@ -51,7 +54,15 @@ const HomeScreen = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const onEndReachedCalledDuringMomentum = useRef(false);
-  // ================= API =================
+
+  const [activeLiveindex, setActiveLiveIndex] = useState(0);
+  const [activescheduleindex, setActivescheduleIndex] = useState(0);
+  const [activeCategoryindex, setActiveCategoryIndex] = useState(0);
+  const [activerecentindex, setActiveRecentIndex] = useState(0);
+  const [activemostviewedindex, setActivemostViewedIndex] = useState(0);
+  const [activePromotedIndex, setActivePromotedIndex] = useState<{
+    [key: number]: number;
+  }>({}); // ================= API =================
 
   const fetchData = async () => {
     if (!selectedChannel?.hostName) return;
@@ -159,16 +170,21 @@ const HomeScreen = () => {
 
   // ================= EFFECTS =================
 
-  useEffect(() => {
-    if (selectedChannel?.hostName) {
-      fetchData();
-    }
-  }, [selectedChannel]);
-
+  // 1. load once
   useEffect(() => {
     selectedChannelload();
   }, []);
 
+  // 2. fetch on focus
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedChannel?.hostName) {
+        fetchData();
+      }
+    }, [selectedChannel]),
+  );
+
+  // 3. promoted API trigger
   useEffect(() => {
     if (ListAllPromotedCategoryId.length > 0) {
       setCurrentIndex(0);
@@ -177,6 +193,16 @@ const HomeScreen = () => {
     }
   }, [ListAllPromotedCategoryId]);
 
+  // 4. reset indexes on focus
+  useFocusEffect(
+    useCallback(() => {
+      setActivescheduleIndex(0);
+      setActiveCategoryIndex(0);
+      setActiveRecentIndex(0);
+      setActivemostViewedIndex(0);
+      setActivePromotedIndex({});
+    }, []),
+  );
   // ================= FOOTER LOADER =================
 
   const renderFooter = () => {
@@ -227,9 +253,28 @@ const HomeScreen = () => {
 
       case 'upcoming':
         if (!item.data.length) return null;
+        const getIndexupcomingById = (id: number | string) => {
+          return item?.data.findIndex((i: EventItemProps) => i.slug === id);
+        };
         return (
           <View style={styles.cardheader}>
-            <Text style={styles.liveText}>Upcoming</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}>
+              <Text style={styles.liveText}>Upcoming</Text>
+              <Text
+                style={{
+                  fontSize: 25,
+                  color: 'white',
+                  marginTop: 5,
+                  fontWeight: 'bold',
+                }}>
+                {activescheduleindex + 1} / {item?.data.length}
+              </Text>
+            </View>
             <FlatList
               data={item.data}
               horizontal
@@ -239,7 +284,13 @@ const HomeScreen = () => {
                   title={item.name}
                   image={item.thumbnail}
                   Startdate={item.startDatetime}
-                  onPress={() => navigation.navigate('VideoDetail',{slug:item.slug})}
+                  onPress={() =>
+                    navigation.navigate('VideoDetail', {slug: item.slug})
+                  }
+                  onFocus={() => {
+                    const realIndex = getIndexupcomingById(item.slug);
+                    setActivescheduleIndex(realIndex);
+                  }}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
@@ -249,10 +300,29 @@ const HomeScreen = () => {
 
       case 'categories':
         if (!item.data.length) return null;
-        const slicedData = item.data.slice(0, 10);
+        const slicedData: ListAllCategoryProps[] = item.data.slice(0, 10);
+        const getIndexById = (id: number | string) => {
+          return slicedData.findIndex((i: ListAllCategoryProps) => i.id === id);
+        };
         return (
           <View style={styles.cardheader}>
-            <Text style={styles.liveText}>Categories</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}>
+              <Text style={styles.liveText}>Categories</Text>
+              <Text
+                style={{
+                  fontSize: 25,
+                  color: 'white',
+                  marginTop: 5,
+                  fontWeight: 'bold',
+                }}>
+                {activeCategoryindex + 1} / {slicedData.length}
+              </Text>
+            </View>
             <FlatList
               data={item.data.slice(0, 10)}
               horizontal
@@ -267,8 +337,12 @@ const HomeScreen = () => {
                       navigation.navigate('SubCategory', {
                         slug: item.slug,
                         subCategories: item.subSategories,
-                        CategoryName: item.name
+                        CategoryName: item.name,
                       });
+                    }}
+                    onFocus={() => {
+                      const realIndex = getIndexById(item.id);
+                      setActiveCategoryIndex(realIndex);
                     }}
                   />
 
@@ -289,9 +363,30 @@ const HomeScreen = () => {
 
       case 'recent':
         if (!item.data.length) return null;
+        const getRecentIndexById = (id: number | string) => {
+          return item?.data.findIndex(
+            (i: RecentVideoItemProps) => i.slug === id,
+          );
+        };
         return (
           <View style={styles.cardheader}>
-            <Text style={styles.liveText}>Recent Videos</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}>
+              <Text style={styles.liveText}>Recent Videos</Text>
+              <Text
+                style={{
+                  fontSize: 25,
+                  color: 'white',
+                  marginTop: 5,
+                  fontWeight: 'bold',
+                }}>
+                {activerecentindex + 1} / {item?.data?.length}
+              </Text>
+            </View>
             <FlatList
               data={item.data}
               horizontal
@@ -302,7 +397,13 @@ const HomeScreen = () => {
                   title={item.name}
                   Startdate={item.timestamp}
                   videotime={item.duration}
-                  onPress={() => navigation.navigate('VideoDetail',{slug:item.slug})}
+                  onPress={() =>
+                    navigation.navigate('VideoDetail', {slug: item.slug})
+                  }
+                  onFocus={() => {
+                    const realIndex = getRecentIndexById(item.slug);
+                    setActiveRecentIndex(realIndex);
+                  }}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
@@ -312,9 +413,30 @@ const HomeScreen = () => {
 
       case 'mostViewed':
         if (!item.data.length) return null;
+        const getMostViewedIndexById = (id: number | string) => {
+          return item?.data.findIndex(
+            (i: RecentVideoItemProps) => i.slug === id,
+          );
+        };
         return (
           <View style={styles.cardheader}>
-            <Text style={styles.liveText}>Most Viewed</Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}>
+              <Text style={styles.liveText}>Most Viewed</Text>
+              <Text
+                style={{
+                  fontSize: 25,
+                  color: 'white',
+                  marginTop: 5,
+                  fontWeight: 'bold',
+                }}>
+                {activemostviewedindex + 1} / {item?.data?.length}
+              </Text>
+            </View>
             <FlatList
               data={item.data}
               horizontal
@@ -327,6 +449,10 @@ const HomeScreen = () => {
                   title={item.name}
                   Startdate={item.timestamp}
                   videotime={item.duration}
+                  onFocus={() => {
+                    const realIndex = getMostViewedIndexById(item.slug);
+                    setActivemostViewedIndex(realIndex);
+                  }}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
@@ -336,12 +462,33 @@ const HomeScreen = () => {
 
       case 'promoted':
         if (!item.data.length) return null;
+        const getPromotedIndexById = (slug: any, section: any) => {
+          return section.media?.findIndex(
+            (mediaItem: any) => mediaItem.slug === slug,
+          );
+        };
         return item.data.map((section: any, index: number) => (
           <View key={index} style={styles.cardheader}>
-            <Text style={styles.liveText}>
-              {section.media?.[0]?.categoryName}
-            </Text>
-
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}>
+              <Text style={styles.liveText}>
+                {section.media?.[0]?.categoryName}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 25,
+                  color: 'white',
+                  marginTop: 5,
+                  fontWeight: 'bold',
+                }}>
+                {(activePromotedIndex[index] ?? 0) + 1} /{' '}
+                {section.media?.length}
+              </Text>
+            </View>
             <FlatList
               data={section.media}
               horizontal
@@ -352,7 +499,16 @@ const HomeScreen = () => {
                   title={item.name}
                   Startdate={item.timestamp}
                   videotime={item.duration}
-                  onPress={() => navigation.navigate('VideoDetail',{slug:item.slug})}
+                  onPress={() =>
+                    navigation.navigate('VideoDetail', {slug: item.slug})
+                  }
+                  onFocus={() => {
+                    const realIndex = getPromotedIndexById(item.slug, section);
+                    setActivePromotedIndex((prev) => ({
+                      ...prev,
+                      [index]: realIndex,
+                    }));
+                  }}
                 />
               )}
               ItemSeparatorComponent={() => <View style={{width: 12}} />}
