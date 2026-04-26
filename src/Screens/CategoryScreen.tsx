@@ -15,6 +15,7 @@ import {listCategoriesPatternsProps} from '../Types/interface';
 import {CategoryCard} from '../components/Cards/CategoryCard';
 import {
   NavigationProp,
+  useFocusEffect,
   useRoute,
 } from '@amazon-devices/react-navigation__native';
 import {backendCall} from '../services/backendCall';
@@ -51,7 +52,7 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
   const route = useRoute();
   const [modalVisible, setModalVisible] = useState(false);
   const modalVisibleRef = useRef(false);
-  const [selectedSort, setSelectedSort] = useState(sortOptions[1]);
+  const [selectedSort, setSelectedSort] = useState(sortOptions[0]);
   const [listCategoriesPatterns, setListCategoriesPatterns] = useState<
     listCategoriesPatternsProps[]
   >([]);
@@ -94,6 +95,16 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
     selectedSort.order,
     selectedChannel,
   ]);
+  const hasLoaded = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasLoaded.current) {
+        FetchAllCategoryList();
+        hasLoaded.current = true;
+      }
+    }, [FetchAllCategoryList]),
+  );
 
   const renderCategory = useCallback(
     ({item, index}: {item: listCategoriesPatternsProps; index: number}) => (
@@ -106,7 +117,7 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
             navigation.navigate('SubCategory', {
               slug: item.slug,
               subSategories: item.subSategories,
-              CategoryName:item?.categoryName
+              CategoryName: item?.categoryName,
             })
           }
           hasTVPreferredFocus={index == 0}

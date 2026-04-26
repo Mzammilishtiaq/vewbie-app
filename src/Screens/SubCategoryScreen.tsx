@@ -198,40 +198,40 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
               Videos
             </Text>
 
-            {VideoSlugItem.length === 0 ? (
-              <View
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  flex: 1,
-                  marginTop: 100,
-                }}>
-                <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 50}}>
-                  Video Not Found
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={VideoSlugItem}
-                keyExtractor={(item, index) => index.toString()}
-                contentContainerStyle={{paddingBottom: 300}}
-                numColumns={5}
-                showsVerticalScrollIndicator
-                renderItem={({item}) => (
-                  <View style={{margin: 10}}>
-                    <VideoCard
-                      title={item?.title}
-                      image={item?.thumbnail}
-                      videotime={item?.duration}
-                      onPress={() =>
-                        navigation.navigate('VideoDetail', {slug: item.slug})
-                      }
-                    />
-                  </View>
-                )}
-              />
-            )}
+            <FlatList
+              data={VideoSlugItem}
+              keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={{paddingBottom: 300}}
+              numColumns={5}
+              showsVerticalScrollIndicator
+              renderItem={({item}) => (
+                <View style={{margin: 10}}>
+                  <VideoCard
+                    title={item?.title}
+                    image={item?.thumbnail}
+                    videotime={item?.duration}
+                    onPress={() =>
+                      navigation.navigate('VideoDetail', {slug: item.slug})
+                    }
+                  />
+                </View>
+              )}
+              ListEmptyComponent={() => (
+                <View
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    flex: 1,
+                    marginTop: 100,
+                  }}>
+                  <Text
+                    style={{color: '#fff', fontWeight: 'bold', fontSize: 50}}>
+                    Video Not Found
+                  </Text>
+                </View>
+              )}
+            />
           </View>
         </View>
 
