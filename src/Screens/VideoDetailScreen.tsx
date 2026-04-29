@@ -1,23 +1,50 @@
-import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, Image} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
-import {FlatList, Image, Pressable} from '@amazon-devices/react-native-kepler';
+import {FlatList, Pressable} from '@amazon-devices/react-native-kepler';
 import ChannelList from '../components/ChannelList';
 import {useChannelStore} from '../store/channelStore';
-import {VideoDetailItemProps, RelatedVideoItemProps} from '../Types/interface';
+import {
+  VideoDetailItemProps,
+  RelatedVideoItemProps,
+  VideoDetailLiveItemProps,
+} from '../Types/interface';
+import {RootStackParamList} from '../Types/navigations';
 import {backendCall} from '../services/backendCall';
-import {useRoute} from '@amazon-devices/react-navigation__native';
-import {VideoCard} from '../components/Cards/VideoCard';
+import {
+  useNavigation,
+  useRoute,
+} from '@amazon-devices/react-navigation__native';
+import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import dayjs from 'dayjs';
 
 import ClockIcon from '../assets/icons/clock-icon.png';
 import CalandarIcon from '../assets/icons/calendar_icon.png';
 import PlayVideoIconWhite from '../assets/icons/play_video-icon-white.png';
 import PlayVideoIconBlack from '../assets/icons/play-video-icon-black.png';
+import UnlockVideoIcon from '../assets/icons/Unlock-video-icon.png';
+import UnlockVideoWhiteIcon from '../assets/icons/Unlockvideo-icon-white.png';
 import FavarateWhiteIcon from '../assets/icons/Faverate-icon-white.png';
 import FavarateBlackIcon from '../assets/icons/Faverate-icon-black.png';
+
+import {VideoCard} from '../components/Cards/VideoCard';
 import Spinner from '../components/Spinner/Spinner';
+import {useAuthStore} from '../store/authStore';
+import PayToWatchSubscription from '../components/PayToWatchSubscription/PayToWatchSubscription';
+
+type VideoDetailNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'VideoDetail'
+>;
+
+const hasDuration = (
+  item: VideoDetailItemProps | VideoDetailLiveItemProps | null,
+): item is VideoDetailItemProps => {
+  return (
+    item !== null && 'duration' in item && typeof item.duration === 'string'
+  );
+};
 
 const InfoRow = ({icon, text}: any) => {
   const formattedDate = dayjs(text).format('DD MMM YYYY');
@@ -32,13 +59,26 @@ const InfoRow = ({icon, text}: any) => {
   );
 };
 
-const ActionButton = ({icon, focuedicon, label, hasTVPreferredFocus}: any) => {
+const ActionButton = ({
+  icon,
+  focuedicon,
+  label,
+  hasTVPreferredFocus,
+  onPress,
+}: {
+  icon?: any;
+  focuedicon?: any;
+  label?: string;
+  hasTVPreferredFocus?: boolean;
+  onPress?: () => void;
+}) => {
   const [isFocued, setIsFocued] = useState(false);
   return (
     <Pressable
       style={({}) => [styles.button, isFocued && {backgroundColor: '#fff'}]}
       onFocus={() => setIsFocued(true)}
       onBlur={() => setIsFocued(false)}
+      onPress={onPress}
       hasTVPreferredFocus={hasTVPreferredFocus}>
       <Image
         source={isFocued && focuedicon ? focuedicon : icon}
@@ -52,32 +92,53 @@ const ActionButton = ({icon, focuedicon, label, hasTVPreferredFocus}: any) => {
 };
 
 const VideoDetailScreen = () => {
+  const {isLoggedIn, setRedirect} = useAuthStore();
+  const navigation = useNavigation<VideoDetailNavigationProp>();
   const route = useRoute();
-  const {slug} = route.params as {slug: string};
+  const {slug, sluglive} = (route.params || {}) as {
+    slug?: string;
+    sluglive?: string;
+  };
   const {selectedChannel, loadChannel} = useChannelStore();
   const [retatedvideoitem, setRetatedVideoItem] = useState<
     RelatedVideoItemProps[]
   >([]);
-  const [VideoDetailItem, setVideoDetailItem] =
-    useState<VideoDetailItemProps | null>(null);
+  const [VideoDetailItem, setVideoDetailItem] = useState<
+    VideoDetailItemProps | VideoDetailLiveItemProps | null
+  >(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [posterUri, setPosterUri] = useState<string | null>(null);
+  const [triedPosterFallback, setTriedPosterFallback] = useState(false);
+  const [PayToWatchSubscriptionbool, setPayToWatchSubscriptionBool] =
+    useState(false);
 
   const fetchVideoData = async () => {
-    if (!selectedChannel?.hostName) return;
+    if (!selectedChannel?.hostName || (!slug && !sluglive)) return;
     setIsLoading(true);
-    console.log('FINAL URL:', `/video/${slug}`);
     try {
-      const videoDetailRes = await backendCall({
-        url: `/video/${slug}`,
-        method: 'GET',
-        origin: selectedChannel.hostName,
-      });
+      let detailItem: VideoDetailItemProps | VideoDetailLiveItemProps | null =
+        null;
 
-      const videoDetail = videoDetailRes?.data;
-      console.log('video detail', videoDetail);
-      setVideoDetailItem(videoDetail);
+      if (slug) {
+        const videoDetailRes = await backendCall({
+          url: `/video/${slug}`,
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        });
+        detailItem = (videoDetailRes?.data as VideoDetailItemProps) || null;
+      } else if (sluglive) {
+        const videoDetailLiveRes = await backendCall({
+          url: `/live/${sluglive}`,
+          method: 'GET',
+          origin: selectedChannel.hostName,
+        });
+        detailItem =
+          (videoDetailLiveRes?.data as VideoDetailLiveItemProps) || null;
+      }
 
-      const mediaId = videoDetail?.id;
+      setVideoDetailItem(detailItem);
+
+      const mediaId = detailItem?.id;
 
       if (!mediaId) return;
 
@@ -96,14 +157,42 @@ const VideoDetailScreen = () => {
     }
   };
 
+  const favariteUpdate = async () => {
+    try {
+      const response = await backendCall({
+        method: 'POST',
+        url: '/update-favorite',
+        origin: selectedChannel?.hostName,
+        data: {
+          isFav: '1',
+          media_id: VideoDetailItem?.media_id,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating favourite:', error);
+    }
+  };
   useEffect(() => {
-    if (selectedChannel?.hostName && slug) {
+    if (selectedChannel?.hostName && (slug || sluglive)) {
       fetchVideoData();
     }
-  }, [selectedChannel?.hostName, slug]);
+  }, [selectedChannel?.hostName, slug, sluglive]);
   useEffect(() => {
     loadChannel();
   }, [loadChannel]);
+
+  useEffect(() => {
+    const nextPoster = VideoDetailItem?.playerSettings?.poster_url || null;
+    setPosterUri(nextPoster);
+    setTriedPosterFallback(false);
+  }, [VideoDetailItem?.playerSettings?.poster_url]);
+
+  // useEffect(() => {
+  //   if (VideoDetailItem?.loginRequired && !isLoggedIn) {
+  //     setRedirect('VideoDetail', {slug, sluglive});
+  //     navigation.navigate('Login');
+  //   }
+  // }, [VideoDetailItem?.loginRequired, isLoggedIn, navigation, setRedirect, slug, sluglive]);
 
   const formatDuration = (duration: string) => {
     const [hoursStr, minutesStr, secondsStr] = duration.split(':');
@@ -128,15 +217,19 @@ const VideoDetailScreen = () => {
 
     return result.trim();
   };
+
+  const contentType = VideoDetailItem?.type?.toUpperCase();
+  const isFree = !!VideoDetailItem?.isFree;
+  const isPaid = !!VideoDetailItem?.isPaid;
+  const shouldShowUnlock = !isLoggedIn || (!isFree && !isPaid);
+  const canWatchOrStream = isLoggedIn && (isFree || isPaid);
+
   return (
     <SafeAreaView style={styles.container}>
       <MainContainer>
         <View style={styles.wrapper}>
-          {VideoDetailItem?.playerSettings?.poster_url && (
-            <Image
-              source={{uri: VideoDetailItem.playerSettings.poster_url}}
-              style={styles.image}
-            />
+          {posterUri && (
+            <Image source={{uri: posterUri}} style={styles.image} />
           )}
           <View style={styles.overlay} />
 
@@ -156,16 +249,21 @@ const VideoDetailScreen = () => {
             ) : (
               <>
                 <View style={styles.topSection}>
-                  <View style={styles.row}>
-                    <Image
-                      source={ClockIcon}
-                      style={styles.icon}
-                      resizeMode="cover"
-                    />
-                    <Text style={styles.subText}>
-                      {formatDuration(VideoDetailItem?.duration || '00:00:00')}
-                    </Text>
-                  </View>
+                  {hasDuration(VideoDetailItem) && (
+                    <View style={styles.row}>
+                      <Image
+                        source={ClockIcon}
+                        style={styles.icon}
+                        resizeMode="cover"
+                      />
+
+                      <Text style={styles.subText}>
+                        {hasDuration(VideoDetailItem)
+                          ? VideoDetailItem.duration
+                          : '00:00:00'}
+                      </Text>
+                    </View>
+                  )}
                   <Text style={styles.title}>{VideoDetailItem?.title}</Text>
 
                   <View style={styles.row}>
@@ -185,47 +283,82 @@ const VideoDetailScreen = () => {
                   />
 
                   <View style={styles.buttonRow}>
-                    <ActionButton
-                      icon={PlayVideoIconWhite}
-                      label="Play Video"
-                      focuedicon={PlayVideoIconBlack}
-                      hasTVPreferredFocus={true}
-                    />
-                    <ActionButton
-                      icon={FavarateWhiteIcon}
-                      label="Add to favourite"
-                      focuedicon={FavarateBlackIcon}
-                    />
+                    {canWatchOrStream && contentType === 'VIDEO' && (
+                      <ActionButton
+                        icon={PlayVideoIconWhite}
+                        label="Play Video"
+                        focuedicon={PlayVideoIconBlack}
+                        hasTVPreferredFocus={true}
+                      />
+                    )}
+                    {canWatchOrStream && contentType === 'EVENT' && (
+                      <ActionButton
+                        label="Offline Stream"
+                        hasTVPreferredFocus={true}
+                      />
+                    )}
+                    {shouldShowUnlock && (
+                      <ActionButton
+                        icon={UnlockVideoWhiteIcon}
+                        focuedicon={UnlockVideoIcon}
+                        label="Unlock Video"
+                        hasTVPreferredFocus={true}
+                        onPress={() => {
+                          if (!isLoggedIn) {
+                            setRedirect('VideoDetail', {slug, sluglive});
+                            navigation.navigate('Login');
+                          } else {
+                            setPayToWatchSubscriptionBool(true);
+                          }
+                        }}
+                      />
+                    )}
+                    {isLoggedIn && contentType === 'VIDEO' && (
+                      <ActionButton
+                        icon={FavarateWhiteIcon}
+                        label="Add to favourite"
+                        focuedicon={FavarateBlackIcon}
+                      />
+                    )}
                   </View>
                 </View>
-                <View style={styles.bottomSection}>
-                  <Text
-                    style={{
-                      fontSize: 34,
-                      fontWeight: '600',
-                      color: '#fff',
-                    }}>
-                    Retated Video
-                  </Text>
-                  <FlatList
-                    horizontal
-                    data={retatedvideoitem}
-                    keyExtractor={(item, index) => index.toString()}
-                    contentContainerStyle={{flexDirection: 'row'}}
-                    scrollEnabled={true}
-                    renderItem={({item}) => (
-                      <View style={{margin: 10}}>
-                        <VideoCard
-                          image={item.thumbnail}
-                          title={item.name}
-                          videotime={item.duration}
-                          Startdate={item.timestamp}
-                        />
-                      </View>
-                    )}
-                    ListFooterComponent={isLoading ? <Spinner /> : null}
-                  />
-                </View>
+                {PayToWatchSubscriptionbool ? (
+                  <PayToWatchSubscription />
+                ) : (
+                  <View style={styles.bottomSection}>
+                    <Text
+                      style={{
+                        fontSize: 34,
+                        fontWeight: '600',
+                        color: '#fff',
+                      }}>
+                      Retated Video
+                    </Text>
+                    <FlatList
+                      horizontal
+                      data={retatedvideoitem}
+                      keyExtractor={(item, index) => index.toString()}
+                      contentContainerStyle={{flexDirection: 'row'}}
+                      scrollEnabled={true}
+                      renderItem={({item}) => (
+                        <View style={{margin: 10}}>
+                          <VideoCard
+                            image={item.thumbnail}
+                            title={item.name}
+                            videotime={item.duration}
+                            Startdate={item.timestamp}
+                            onPress={() =>
+                              navigation.navigate('VideoDetail', {
+                                slug: item.slug,
+                              })
+                            }
+                          />
+                        </View>
+                      )}
+                      ListFooterComponent={isLoading ? <Spinner /> : null}
+                    />
+                  </View>
+                )}
               </>
             )}
           </View>
@@ -246,7 +379,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'stretch',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -295,7 +428,7 @@ const styles = StyleSheet.create({
 
   buttonRow: {
     flexDirection: 'row',
-    gap: 25,
+    gap: 15,
   },
 
   button: {

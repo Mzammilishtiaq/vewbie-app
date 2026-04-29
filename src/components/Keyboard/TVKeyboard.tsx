@@ -4,6 +4,7 @@ import {
   Text,
   Pressable,
   Image,
+  TVFocusGuideView,
 } from '@amazon-devices/react-native-kepler';
 
 import ShiftIcon from '../../assets/icons/shift_svgrepo.com.png';
@@ -14,9 +15,10 @@ import BackspaceFocusIcon from '../../assets/icons/backspace_focus.png';
 
 interface Props {
   onKeyPress?: (key: string) => void;
+  focusIndex?: number;
 }
 
-const TVKeyboard: React.FC<Props> = ({onKeyPress}) => {
+const TVKeyboard: React.FC<Props> = ({onKeyPress, focusIndex}) => {
   const [showSymbols, setShowSymbols] = useState(false);
   const [isShift, setIsShift] = useState(false);
 
@@ -38,6 +40,7 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress}) => {
     ['~', '`', '|', '<', '>', ',', '.', '?', '/', '\\'],
     ['"', "'", '€', '£', '¥', '©', '®', '™', '§', '¶'],
   ];
+  const mailKeys = ['@gmail.com', '@yahoo.com', '@hotmail.com', '.com'];
 
   const activeKeys = showSymbols
     ? symbolKeys
@@ -71,7 +74,13 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress}) => {
     }, 0);
   };
 
+  React.useEffect(() => {
+    if (focusIndex !== undefined && keyRefs.current[0]?.[focusIndex]) {
+      keyRefs.current[0][focusIndex]?.focus?.();
+    }
+  }, [focusIndex]);
   return (
+    <TVFocusGuideView trapFocusLeft trapFocusRight trapFocusUp trapFocusDown>
     <View
       style={{
         flexDirection: 'row',
@@ -198,7 +207,7 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress}) => {
               backspaceRef.current?.focus?.();
             }, 0);
           }}
-          style={({focused}:any) => [
+          style={({focused}: any) => [
             {
               width: 140,
               height: 78,
@@ -213,7 +222,7 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress}) => {
               transform: [{scale: 1.1}],
             },
           ]}>
-          {({focused}:any) =>
+          {({focused}: any) =>
             focused ? (
               <Image source={BackspaceFocusIcon} width={34} height={34} />
             ) : (
@@ -256,48 +265,40 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress}) => {
         </Pressable>
 
         <Pressable
-  ref={doneRef}
-  focusable
-  onPress={() => {
+          ref={doneRef}
+          focusable
+          onPress={() => {
+           onKeyPress?.('DONE');
+          }}
+          style={({focused}) => [
+            {
+              backgroundColor: 'rgba(215,215,215,0.2)',
+              width: 140,
+              height: 78,
+              borderRadius: 7,
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
 
-    // your Done action here
-    console.log('Done pressed');
-
-    // restore focus
-    setTimeout(() => {
-      doneRef.current?.focus?.();
-    }, 0);
-
-  }}
-  style={({focused}) => [
-    {
-      backgroundColor: 'rgba(215,215,215,0.2)',
-      width: 140,
-      height: 78,
-      borderRadius: 7,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-
-    focused && {
-      backgroundColor: '#ffffff',
-      transform: [{scale: 1.1}],
-    },
-  ]}
->
-  {({focused}) => (
-    <Text
-      style={{
-        color: focused ? '#000' : '#fff',
-        fontSize: 28,
-        fontWeight: 'bold',
-      }}>
-      Done
-    </Text>
-  )}
-</Pressable>
+            focused && {
+              backgroundColor: '#ffffff',
+              transform: [{scale: 1.1}],
+            },
+          ]}>
+          {({focused}) => (
+            <Text
+              style={{
+                color: focused ? '#000' : '#fff',
+                fontSize: 28,
+                fontWeight: 'bold',
+              }}>
+              Done
+            </Text>
+          )}
+        </Pressable>
       </View>
     </View>
+    </TVFocusGuideView>
   );
 };
 

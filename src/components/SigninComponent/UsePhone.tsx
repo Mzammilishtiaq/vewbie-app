@@ -1,4 +1,4 @@
-import {View, Text} from 'react-native';
+import {View, Text} from '@amazon-devices/react-native-kepler';
 import React, {useState} from 'react';
 import QRCode from '@amazon-devices/react-native-qrcode-svg';
 import LinearGradient from '@amazon-devices/react-linear-gradient';
@@ -16,6 +16,9 @@ type UsePhoneNavigationProp = StackNavigationProp<RootStackParamList>;
 const UsePhone = () => {
   const {loadChannel, selectedChannel} = useChannelStore();
   const login = useAuthStore((state) => state.login);
+  const redirectRoute = useAuthStore((state) => state.redirectRoute);
+  const redirectParams = useAuthStore((state) => state.redirectParams);
+  const clearRedirect = useAuthStore((state) => state.clearRedirect);
   const navigation = useNavigation<UsePhoneNavigationProp>();
   const {deviceId} = getVegaInfo();
   const [GenerateCode, setGenerateCode] = useState<string>('');
@@ -64,7 +67,13 @@ React.useEffect(() => {
       if (token) {
         clearInterval(interval);
         await login(response.data);
-        navigation.navigate('Home');
+
+        if (redirectRoute) {
+          navigation.navigate(redirectRoute as keyof RootStackParamList, redirectParams);
+          clearRedirect();
+        } else {
+          navigation.navigate('Home');
+        }
       }
 
     } catch (error) {
@@ -75,7 +84,16 @@ React.useEffect(() => {
   // ✅ proper cleanup
   return () => clearInterval(interval);
 
-}, [GenerateCode, selectedChannel?.hostName, deviceId]);
+}, [
+  GenerateCode,
+  selectedChannel?.hostName,
+  deviceId,
+  login,
+  redirectRoute,
+  redirectParams,
+  navigation,
+  clearRedirect,
+]);
   React.useEffect(() => {
     loadChannel();
   }, []);
@@ -85,6 +103,7 @@ React.useEffect(() => {
         display: 'flex',
         flexDirection: 'row',
         gap: 50,
+        paddingLeft: 100
       }}>
       <LinearGradient
         colors={['rgba(255, 255, 255, 0.1)', 'rgba(95, 91, 116, 0.1)']}
@@ -101,7 +120,7 @@ React.useEffect(() => {
           borderColor: 'rgba(250, 250, 250, 0.1)',
           flex: 1,
           width: 728,
-          height: 512,
+          height: 'auto',
           paddingVertical: 50,
         }}>
         <View
@@ -177,7 +196,7 @@ React.useEffect(() => {
           borderColor: 'rgba(250, 250, 250, 0.1)',
           flex: 1,
           width: 728,
-          height: 512,
+          height: "auto",
           paddingVertical: 50,
         }}>
         <View

@@ -9,8 +9,140 @@ import Logo from '../assets/images/logo.png';
 import Emailicon from '../assets/icons/email_svgrepo.com.png';
 import Passwordicon from '../assets/icons/password1.png';
 import Accounticon from '../assets/icons/account_svgrepo.com.png';
+import {backendCall} from '../services/backendCall';
 
+interface Props {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+}
 const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
+  const [inputSignin, setInputSignin] = React.useState<Props>({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+  });
+  const [errors, setErrors] = React.useState<
+    Partial<Record<keyof Props, string>>
+  >({});
+  const [submitError, setSubmitError] = React.useState('');
+  const [activeField, setActiveField] =
+    React.useState<keyof Props>('firstName');
+  const [loading, setLoading] = React.useState(false);
+  const inputRef = React.useRef<TextInput>(null);
+  const signinButtonRef =
+    React.useRef<React.ElementRef<typeof Pressable>>(null);
+  const [keyboardReset, setKeyboardReset] = React.useState(0);
+  const setField = (field: keyof Props) => {
+    setActiveField(field);
+  };
+  const validateForm = () => {
+    const nextErrors: Partial<Record<keyof Props, string>> = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!inputSignin.firstName.trim()) {
+      nextErrors.firstName = 'First name is required.';
+    }
+    if (!inputSignin.lastName.trim()) {
+      nextErrors.lastName = 'Last name is required.';
+    }
+
+    if (!inputSignin.email.trim()) {
+      nextErrors.email = 'Email is required.';
+    } else if (!emailRegex.test(inputSignin.email.trim())) {
+      nextErrors.email = 'Enter a valid email address.';
+    }
+
+    if (!inputSignin.password) {
+      nextErrors.password = 'Password is required.';
+    } else if (inputSignin.password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters long.';
+    }
+
+    if (!inputSignin.confirmPassword) {
+      nextErrors.confirmPassword = 'Confirm password is required.';
+    } else if (inputSignin.password !== inputSignin.confirmPassword) {
+      nextErrors.confirmPassword =
+        'Password and Confirm Password must be equal.';
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleKeyPress = (key: string) => {
+    inputRef.current?.focus();
+    switch (key) {
+      case 'BACKSPACE':
+        setInputSignin((prev) => ({
+          ...prev,
+          [activeField]: prev[activeField].slice(0, -1),
+        }));
+        break;
+
+      case 'SPACE':
+        setInputSignin((prev) => ({
+          ...prev,
+          [activeField]: prev[activeField] + ' ',
+        }));
+        break;
+
+      case 'DONE':
+        signinButtonRef.current?.focus();
+        break;
+
+      default:
+        setInputSignin((prev) => ({
+          ...prev,
+          [activeField]: prev[activeField] + key,
+        }));
+        break;
+    }
+  };
+  const HandleSignin = async () => {
+    if (loading) {
+      return;
+    }
+
+    setSubmitError('');
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await backendCall({
+        url: '/signup',
+        method: 'POST',
+        data: {
+          email: inputSignin.email.trim(),
+          password: inputSignin.password,
+          firstName: inputSignin.firstName.trim(),
+          lastName: inputSignin.lastName.trim(),
+        },
+      });
+      if (response?.status === 201) {
+        navigation.navigate('Login');
+      } else {
+        setSubmitError('Unable to sign up. Please try again.');
+      }
+      console.log('Signin Success:', response);
+    } catch (error) {
+      setSubmitError(
+        'Unable to sign up. Please check your details and try again.',
+      );
+      console.error('Signin failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  React.useEffect(() => {
+    setKeyboardReset((prev) => prev + 1);
+  }, [activeField]);
   return (
     <SafeAreaView
       style={{
@@ -19,7 +151,7 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
       }}>
       <View
         style={{
-          margin: 50,
+          margin: 100,
           display: 'flex',
           flexDirection: 'column',
           gap: 50,
@@ -107,17 +239,22 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
                 }}>
                 Let’s Get Started
               </Text>
-              <View
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  width: 680,
-                  height: 89,
-                  borderWidth: 3,
-                  borderColor: '#fff',
-                  borderRadius: 8,
-                }}>
+              <Pressable
+                onPress={() => setField('firstName')}
+                style={({focused, pressed}) => [
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    width: 680,
+                    height: 89,
+                    borderWidth: 3,
+                    borderRadius: 8,
+                    borderColor: focused ? '#fff' : '#383737',
+                  },
+                  (pressed || activeField === 'firstName') && {
+                    borderColor: '#fff',
+                  },
+                ]}>
                 <Image
                   source={Accounticon}
                   style={{width: 32, height: 32, margin: 20}}
@@ -130,22 +267,78 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
                     width: 600,
                     alignContent: 'center',
                   }}
-                  placeholder="Full Name"
-                  autoFocus={true}
+                  placeholder="First Name"
+                  value={inputSignin.firstName}
+                  onChangeText={(text) => {
+                    setInputSignin((prev) => ({...prev, firstName: text}));
+                    setErrors((prev) => ({...prev, firstName: undefined}));
+                  }}
                   showSoftInputOnFocus={true}
                 />
-              </View>
-              <View
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  width: 680,
-                  height: 89,
-                  borderWidth: 3,
-                  borderColor: '#fff',
-                  borderRadius: 8,
-                }}>
+              </Pressable>
+              {errors.firstName && (
+                <Text style={{color: '#FF6B6B', fontSize: 20, width: 680}}>
+                  {errors.firstName}
+                </Text>
+              )}
+              <Pressable
+                onPress={() => setField('lastName')}
+                style={({focused,pressed}) => [
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    width: 680,
+                    height: 89,
+                    borderWidth: 3,
+                    borderRadius: 8,
+                    borderColor: focused ? '#fff' : '#383737',
+                  },
+                 (pressed || activeField === 'lastName') && {
+                    borderColor: '#fff',
+                  },
+                ]}>
+                <Image
+                  source={Accounticon}
+                  style={{width: 32, height: 32, margin: 20}}
+                />
+                <TextInput
+                  style={{
+                    fontSize: 30,
+                    color: '#fff',
+                    height: 45,
+                    width: 600,
+                    alignContent: 'center',
+                  }}
+                  placeholder="Last Name"
+                  value={inputSignin.lastName}
+                  onChangeText={(text) => {
+                    setInputSignin((prev) => ({...prev, lastName: text}));
+                    setErrors((prev) => ({...prev, lastName: undefined}));
+                  }}
+                  showSoftInputOnFocus={true}
+                />
+              </Pressable>
+              {errors.firstName && (
+                <Text style={{color: '#FF6B6B', fontSize: 20, width: 680}}>
+                  {errors.firstName}
+                </Text>
+              )}
+              <Pressable
+                onPress={() => setField('email')}
+                style={({focused, pressed}) => [
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    width: 680,
+                    height: 89,
+                    borderWidth: 3,
+                    borderRadius: 8,
+                    borderColor: focused ? '#fff' : '#383737',
+                  },
+                 (pressed || activeField === 'email') && {
+                    borderColor: '#fff',
+                  },
+                ]}>
                 <Image
                   source={Emailicon}
                   style={{width: 32, height: 32, margin: 20}}
@@ -158,65 +351,122 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
                     width: 600,
                     alignContent: 'center',
                   }}
-                  placeholder="Enter Email"
+                  keyboardType="email-address"
+                  placeholder="Email"
                   showSoftInputOnFocus={true}
-                />
-              </View>
-              <View
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  width: 680,
-                  height: 89,
-                  borderWidth: 3,
-                  borderColor: '#fff',
-                  borderRadius: 8,
-                }}>
-                <Image
-                  source={Passwordicon}
-                  style={{width: 32, height: 32, margin: 20}}
-                />
-                <TextInput
-                  style={{
-                    fontSize: 30,
-                    color: '#fff',
-                    height: 45,
-                    width: 600,
-                    alignContent: 'center',
+                  value={inputSignin.email}
+                  onChangeText={(text) => {
+                    setInputSignin((prev) => ({...prev, email: text}));
+                    setErrors((prev) => ({...prev, email: undefined}));
                   }}
-                  placeholder="Enter Password"
-                  showSoftInputOnFocus={true}
                 />
-              </View>
-              <View
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  width: 680,
-                  height: 89,
-                  borderWidth: 3,
-                  borderColor: '#fff',
-                  borderRadius: 8,
-                }}>
-                <Image
-                  source={Passwordicon}
-                  style={{width: 32, height: 32, margin: 20}}
-                />
-                <TextInput
-                  style={{
-                    fontSize: 30,
-                    color: '#fff',
-                    height: 45,
-                    width: 600,
-                    alignContent: 'center',
-                  }}
-                  placeholder="Enter Phone"
-                  showSoftInputOnFocus={true}
-                />
-              </View>
+              </Pressable>
+              {errors.email && (
+                <Text style={{color: '#FF6B6B', fontSize: 20, width: 680}}>
+                  {errors.email}
+                </Text>
+              )}
               <Pressable
+                onPress={() => setField('password')}
+                style={({focused, pressed}) => [
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    width: 680,
+                    height: 89,
+                    borderWidth: 3,
+                    borderRadius: 8,
+                    borderColor: focused ? '#fff' : '#383737',
+                  },
+                  (pressed || activeField === 'password') && {
+                    borderColor: '#fff',
+                  },
+                ]}>
+                <Image
+                  source={Passwordicon}
+                  style={{width: 32, height: 32, margin: 20}}
+                />
+                <TextInput
+                  style={{
+                    fontSize: 30,
+                    color: '#fff',
+                    height: 45,
+                    width: 600,
+                    alignContent: 'center',
+                  }}
+                  value={inputSignin.password}
+                  onChangeText={(text) => {
+                    setInputSignin((prev) => ({...prev, password: text}));
+                    setErrors((prev) => ({...prev, password: undefined}));
+                  }}
+                  secureTextEntry={true}
+                  placeholder="Password"
+                  showSoftInputOnFocus={true}
+                />
+              </Pressable>
+              {errors.password && (
+                <Text style={{color: '#FF6B6B', fontSize: 20, width: 680}}>
+                  {errors.password}
+                </Text>
+              )}
+              <Pressable
+                onPress={() => setField('confirmPassword')}
+                style={({focused, pressed}) => [
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    width: 680,
+                    height: 89,
+                    borderWidth: 3,
+                    borderRadius: 8,
+                    borderColor: focused ? '#fff' : '#383737',
+                  },
+                  (pressed || activeField === 'confirmPassword') && {
+                    borderColor: '#fff',
+                  },
+                ]}>
+                <Image
+                  source={Passwordicon}
+                  style={{width: 32, height: 32, margin: 20}}
+                />
+                <TextInput
+                  style={{
+                    fontSize: 30,
+                    color: '#fff',
+                    height: 45,
+                    width: 600,
+                    alignContent: 'center',
+                  }}
+                  value={inputSignin.confirmPassword}
+                  onChangeText={(text) => {
+                    setInputSignin((prev) => ({
+                      ...prev,
+                      confirmPassword: text,
+                    }));
+                    setErrors((prev) => ({
+                      ...prev,
+                      confirmPassword: undefined,
+                    }));
+                  }}
+                  secureTextEntry={true}
+                  placeholder="Confirm Password"
+                  showSoftInputOnFocus={true}
+                />
+              </Pressable>
+              {errors.confirmPassword && (
+                <Text style={{color: '#FF6B6B', fontSize: 20, width: 680}}>
+                  {errors.confirmPassword}
+                </Text>
+              )}
+              {submitError ? (
+                <Text style={{color: '#FF6B6B', fontSize: 20, width: 680}}>
+                  {submitError}
+                </Text>
+              ) : null}
+              <Pressable
+                ref={signinButtonRef}
+                onPress={HandleSignin}
+                disabled={loading}
                 style={({focused, pressed}) => [
                   {
                     width: 350,
@@ -229,6 +479,7 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
                     textAlign: 'center',
                     paddingHorizontal: 20,
                     paddingVertical: 20,
+                    opacity: loading ? 0.6 : 1,
                   },
                   focused && {backgroundColor: '#3366FD'},
                 ]}>
@@ -243,7 +494,11 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
                 </Text>
               </Pressable>
             </View>
-            <TVKeyboard />
+            <TVKeyboard
+              onKeyPress={handleKeyPress}
+              key={keyboardReset}
+              focusIndex={0}
+            />
           </View>
         </View>
 

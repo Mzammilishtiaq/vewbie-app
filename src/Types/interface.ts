@@ -181,3 +181,39 @@ export interface SubscriptionProps {
   hostName: string;
   isRecurring: boolean;
 }
+
+export interface VideoDetailLiveItemProps {
+  id: number;
+  media_id: string;
+  title: string;
+
+  isFree: boolean;
+  isPaid: boolean;
+  loginRequired: boolean;
+  subscribers: number;
+  online: boolean;
+
+  description: string;
+  startDatetime: string;
+  timestamp: string;
+
+  isAds: boolean;
+  type: string;
+
+  subscriptions: {
+    id: string;
+    name: string;
+    price: string;
+  }[];
+  categories: {
+    id: number;
+    name: string;
+    slug: string;
+  }[];
+  playerSettings: {
+    hlsURL: string;
+    poster_url: string;
+    isMediaAds: string;
+    adsIntervalTime: number;
+  };
+}

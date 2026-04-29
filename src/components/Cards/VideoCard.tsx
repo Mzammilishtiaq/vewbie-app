@@ -1,6 +1,6 @@
-import {View, Text, Image, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import React from 'react';
-import {Pressable} from '@amazon-devices/react-native-kepler';
+import {Pressable, Image} from '@amazon-devices/react-native-kepler';
 import dayjs from 'dayjs';
 
 interface CardProps {
@@ -13,6 +13,23 @@ interface CardProps {
   onPress?: () => void;
   onFocus?: () => void;
 }
+
+const getDisplayText = (title?: string) => {
+  if (!title) return '';
+
+  // Find number inside brackets
+  const match = title.match(/\((\d+)\)/);
+
+  if (match) {
+    const firstLetter = title.charAt(0).toUpperCase();
+    const firstDigit = match[1].charAt(0); // first number only
+
+    return firstLetter + firstDigit; // e.g. G + 2 → G2
+  }
+
+  // Default → only first letter
+  return title.charAt(0).toUpperCase();
+};
 export const VideoCard = ({
   title,
   image,
@@ -45,10 +62,29 @@ export const VideoCard = ({
             focused && styles.focused,
             pressed && styles.pressedItem,
           ]}>
-          {image && (
+          {image == null ? (
+            <View
+              style={{
+                width: 306,
+                height: 172,
+                backgroundColor: '#007BFF',
+                borderRadius: 10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#fff', fontSize: 48}}>
+                {getDisplayText(title)}
+              </Text>
+            </View>
+          ) : (
             <Image
               style={styles.image}
-              source={typeof image === 'string' ? {uri: image} : image}
+              source={
+                typeof image === 'string'
+                  ? {uri: image, cache: 'force-cache'} // Force-cache can help the decoder lock in
+                  : image
+              }
             />
           )}
         </Pressable>
@@ -98,7 +134,7 @@ const styles = StyleSheet.create({
     width: 306,
     height: 172,
     borderRadius: 10,
-    resizeMode: 'cover',
+    resizeMode: 'stretch',
   },
   title: {
     fontSize: 18,
