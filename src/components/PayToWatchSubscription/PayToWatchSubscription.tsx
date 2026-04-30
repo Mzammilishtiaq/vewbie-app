@@ -15,6 +15,7 @@ const PayToWatchSubscription = () => {
   return (
     <View
       style={{
+        flex:1,
         display:'flex',
         flexDirection:'row',
         alignItems:'center',
@@ -25,7 +26,7 @@ const PayToWatchSubscription = () => {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: 200,
           alignItems: 'flex-start',
           justifyContent: 'space-between',
         }}>
@@ -50,14 +51,12 @@ const PayToWatchSubscription = () => {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
-            marginTop: 20,
+            gap: 40,
           }}>
           <Text
             style={{
               fontSize: 34,
               fontWeight: 'bold',
-              marginTop: 10,
               color: '#fff',
             }}>
             Pay to watch or buy subscription
@@ -66,7 +65,6 @@ const PayToWatchSubscription = () => {
             style={{
               fontSize: 28,
               fontWeight: 'bold',
-              marginTop: 10,
               color: '#fff',
             }}>
             Visit this URL
@@ -75,7 +73,6 @@ const PayToWatchSubscription = () => {
             style={{
               fontSize: 28,
               fontWeight: '400',
-              marginTop: 10,
               color: '#fff',
             }}>
             {`${selectedChannel?.domainUrl}subscriptions`}
@@ -111,21 +108,20 @@ const PayToWatchSubscription = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight:300,
+        marginRight:200,
         gap:20
       }}>
         <Text
           style={{
             fontSize: 28,
             fontWeight: 'bold',
-            marginTop: 10,
             color: '#fff',
           }}>
           Scan QR Code
         </Text>
         <View
           style={{
-            padding: 15,
+            padding: 30,
             backgroundColor: '#FFFFFF',
           }}>
           <QRCode

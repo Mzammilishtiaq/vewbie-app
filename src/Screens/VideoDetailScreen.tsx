@@ -27,6 +27,8 @@ import UnlockVideoIcon from '../assets/icons/Unlock-video-icon.png';
 import UnlockVideoWhiteIcon from '../assets/icons/Unlockvideo-icon-white.png';
 import FavarateWhiteIcon from '../assets/icons/Faverate-icon-white.png';
 import FavarateBlackIcon from '../assets/icons/Faverate-icon-black.png';
+import UnFavarateBlackIcon from '../assets/icons/unFaverate-icon-black.png';
+import UnFavarateWhiteIcon from '../assets/icons/unFaverate-icon-white.png';
 
 import {VideoCard} from '../components/Cards/VideoCard';
 import Spinner from '../components/Spinner/Spinner';
@@ -111,7 +113,8 @@ const VideoDetailScreen = () => {
   const [triedPosterFallback, setTriedPosterFallback] = useState(false);
   const [PayToWatchSubscriptionbool, setPayToWatchSubscriptionBool] =
     useState(false);
-
+  const [isFav, setIsFav] = useState<1 | 0>(0);
+  const [activeretatedvideoindex, setActiveRetatedVideoIndex] = useState(0);
   const fetchVideoData = async () => {
     if (!selectedChannel?.hostName || (!slug && !sluglive)) return;
     setIsLoading(true);
@@ -126,6 +129,7 @@ const VideoDetailScreen = () => {
           origin: selectedChannel.hostName,
         });
         detailItem = (videoDetailRes?.data as VideoDetailItemProps) || null;
+        setIsFav(detailItem?.isFav === 0 ? 0 : 1);
       } else if (sluglive) {
         const videoDetailLiveRes = await backendCall({
           url: `/live/${sluglive}`,
@@ -137,7 +141,7 @@ const VideoDetailScreen = () => {
       }
 
       setVideoDetailItem(detailItem);
-
+      console.log('video detail', detailItem);
       const mediaId = detailItem?.id;
 
       if (!mediaId) return;
@@ -157,21 +161,29 @@ const VideoDetailScreen = () => {
     }
   };
 
-  const favariteUpdate = async () => {
+  const handleFavourite = async (value: 1 | 0) => {
+    if (!VideoDetailItem?.media_id) return;
+    setIsLoading(true);
+
     try {
-      const response = await backendCall({
-        method: 'POST',
-        url: '/update-favorite',
+      await backendCall({
+        method: 'PUT',
+        url: '/favorite-media',
         origin: selectedChannel?.hostName,
         data: {
-          isFav: '1',
-          media_id: VideoDetailItem?.media_id,
+          isFav: value,
+          media_id: VideoDetailItem.media_id,
         },
       });
+
+      setIsFav(value);
     } catch (error) {
       console.error('Error updating favourite:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
+
   useEffect(() => {
     if (selectedChannel?.hostName && (slug || sluglive)) {
       fetchVideoData();
@@ -187,43 +199,17 @@ const VideoDetailScreen = () => {
     setTriedPosterFallback(false);
   }, [VideoDetailItem?.playerSettings?.poster_url]);
 
-  // useEffect(() => {
-  //   if (VideoDetailItem?.loginRequired && !isLoggedIn) {
-  //     setRedirect('VideoDetail', {slug, sluglive});
-  //     navigation.navigate('Login');
-  //   }
-  // }, [VideoDetailItem?.loginRequired, isLoggedIn, navigation, setRedirect, slug, sluglive]);
-
-  const formatDuration = (duration: string) => {
-    const [hoursStr, minutesStr, secondsStr] = duration.split(':');
-
-    const hours = parseInt(hoursStr, 10);
-    const minutes = parseInt(minutesStr, 10);
-    const seconds = parseInt(secondsStr, 10);
-
-    let result = '';
-
-    if (hours > 0) {
-      result += `${hours} hour${hours > 1 ? 's' : ''} `;
-    }
-
-    if (minutes > 0) {
-      result += `${minutes} min `;
-    }
-
-    if (seconds > 0) {
-      result += `${seconds} sec`;
-    }
-
-    return result.trim();
-  };
-
   const contentType = VideoDetailItem?.type?.toUpperCase();
   const isFree = !!VideoDetailItem?.isFree;
   const isPaid = !!VideoDetailItem?.isPaid;
   const shouldShowUnlock = !isLoggedIn || (!isFree && !isPaid);
   const canWatchOrStream = isLoggedIn && (isFree || isPaid);
 
+  const getIndexupcomingById = (id: number | string) => {
+    return retatedvideoitem?.findIndex(
+      (i: RelatedVideoItemProps) => i.slug === id,
+    );
+  };
   return (
     <SafeAreaView style={styles.container}>
       <MainContainer>
@@ -276,7 +262,7 @@ const VideoDetailScreen = () => {
                     <Text style={styles.subText}>{selectedChannel?.name}</Text>
                   </View>
                 </View>
-                <View style={styles.bottomSection}>
+                {!PayToWatchSubscriptionbool&&<View style={styles.bottomSection}>
                   <InfoRow
                     icon={CalandarIcon}
                     text={VideoDetailItem?.timestamp}
@@ -289,6 +275,7 @@ const VideoDetailScreen = () => {
                         label="Play Video"
                         focuedicon={PlayVideoIconBlack}
                         hasTVPreferredFocus={true}
+                        onPress={() => navigation.navigate('Watch')}
                       />
                     )}
                     {canWatchOrStream && contentType === 'EVENT' && (
@@ -313,27 +300,54 @@ const VideoDetailScreen = () => {
                         }}
                       />
                     )}
-                    {isLoggedIn && contentType === 'VIDEO' && (
-                      <ActionButton
-                        icon={FavarateWhiteIcon}
-                        label="Add to favourite"
-                        focuedicon={FavarateBlackIcon}
-                      />
-                    )}
+                    {isLoggedIn &&
+                      contentType === 'VIDEO' &&
+                      (isFav === 0 ? (
+                        <ActionButton
+                          icon={FavarateWhiteIcon}
+                          label="Favourite"
+                          focuedicon={FavarateBlackIcon}
+                          onPress={() => handleFavourite(1)}
+                        />
+                      ) : isFav === 1 ? (
+                        <ActionButton
+                          icon={UnFavarateWhiteIcon}
+                          label="Unfavourite"
+                          focuedicon={UnFavarateBlackIcon}
+                          onPress={() => handleFavourite(0)}
+                        />
+                      ) : null)}
                   </View>
-                </View>
+                </View>}
                 {PayToWatchSubscriptionbool ? (
                   <PayToWatchSubscription />
                 ) : (
                   <View style={styles.bottomSection}>
-                    <Text
+                    <View
                       style={{
-                        fontSize: 34,
-                        fontWeight: '600',
-                        color: '#fff',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        width: '100%',
                       }}>
-                      Retated Video
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 34,
+                          fontWeight: '600',
+                          color: '#fff',
+                        }}>
+                        Retated Video
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 25,
+                          color: 'white',
+                          marginTop: 5,
+                          fontWeight: 'bold',
+                        }}>
+                        {activeretatedvideoindex + 1} /{' '}
+                        {retatedvideoitem.length}
+                      </Text>
+                    </View>
                     <FlatList
                       horizontal
                       data={retatedvideoitem}
@@ -352,6 +366,10 @@ const VideoDetailScreen = () => {
                                 slug: item.slug,
                               })
                             }
+                            onFocus={() => {
+                              const realIndex = getIndexupcomingById(item.slug);
+                              setActiveRetatedVideoIndex(realIndex);
+                            }}
                           />
                         </View>
                       )}
@@ -388,7 +406,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     ...StyleSheet.absoluteFillObject,
-    padding: 20,
+    padding: 30,
     gap: 60,
   },
 

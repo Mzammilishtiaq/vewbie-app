@@ -30,6 +30,7 @@ type HomeNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 const HomeScreen = () => {
   const navigation = useNavigation<HomeNavigationProp>();
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
+  console.log('selectedChannel?.hostName',selectedChannel?.hostName);
   const selectedChannelload = useChannelStore((s) => s.loadChannel);
   const [listalllivesItem, setlistalllivesItem] = useState([]);
   const [ScheduleEventsItem, SetScheduleEventsItem] = useState<
@@ -113,7 +114,7 @@ const HomeScreen = () => {
       setCategoryAllListItem(categories?.data || []);
       setRecentVideoItem(recent?.data || []);
       setMostViewedVideoItem(mostViewed?.data || []);
-
+      console.log('schedule?.data', schedule?.data);
       // ✅ only store IDs
       setListAllPromotedCategoryId(promotedIds?.data || []);
     } catch (e) {
@@ -285,7 +286,7 @@ const HomeScreen = () => {
                   image={item.thumbnail}
                   Startdate={item.startDatetime}
                   onPress={() =>
-                    navigation.navigate('VideoDetail', {slug: item.slug})
+                    navigation.navigate('VideoDetail', {sluglive: item.slug})
                   }
                   onFocus={() => {
                     const realIndex = getIndexupcomingById(item.slug);
@@ -566,8 +567,10 @@ const styles = StyleSheet.create({
   },
   subContainer: {
     flex: 1,
-    gap: 30,
     paddingHorizontal: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 80,
   },
   MainTitle: {
     fontSize: 46,

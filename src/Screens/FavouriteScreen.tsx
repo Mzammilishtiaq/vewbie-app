@@ -1,24 +1,65 @@
-import {StyleSheet, Text, View} from 'react-native';
-import React from 'react';
-import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
-import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/ChannelList';
-import {
-  FlatList,
-  Image,
-  Pressable,
-  ScrollView,
-} from '@amazon-devices/react-native-kepler';
+import {Text, View} from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
 
-import ArrowIcon from '../assets/icons/angle-right_icon.png';
+import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
+import {FlatList} from '@amazon-devices/react-native-kepler';
+import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
+import {useFocusEffect, useNavigation} from '@amazon-devices/react-navigation__native';
+
 import Imageimg from '../assets/image.png';
 
-import SubCategoryCard from '../components/Cards/SubCategoryCard';
+import MainContainer from '../Container/MainContainer';
+import CategoryList from '../components/ChannelList';
 import {VideoCard} from '../components/Cards/VideoCard';
+import {backendCall} from '../services/backendCall';
+import {useChannelStore} from '../store/channelStore';
+import Spinner from '../components/Spinner/Spinner';
+import {FavouriteVideoItem} from '../Types/interface';
+import {RootStackParamList} from '../Types/navigations';
+
+type FavouriteNavigationProp = StackNavigationProp<RootStackParamList, 'Favorite'>;
 
 const FavouriteScreen = () => {
+  const navigation = useNavigation<FavouriteNavigationProp>();
+  const {selectedChannel, loadChannel} = useChannelStore((state) => state);
+  const [favouriteVideos, setFavouriteVideos] = useState<FavouriteVideoItem[]>(
+    [],
+  );
+  const [isloading, setIsloading] = useState(false);
+const fetchFaverateVideo = async () => {
+      if (!selectedChannel?.hostName) return;
+      setIsloading(true);
+      try {
+        const response = await backendCall({
+          method: 'GET',
+          url: '/get-user-media-by-user?tab=favorities',
+          origin: selectedChannel.hostName,
+        });
+        console.log('Favourite videos response:', response.data);
+        setFavouriteVideos(response?.data || []);
+      } catch (error) {
+        console.error('Error fetching favourite videos:', error);
+      } finally {
+        setIsloading(false);
+      }
+    };
+  useEffect(() => {
+    if (!selectedChannel?.hostName) return;
+    fetchFaverateVideo();
+  }, [selectedChannel]);
+
+    useFocusEffect(
+  useCallback(() => {
+    if (!selectedChannel?.hostName) return;
+
+    fetchFaverateVideo();
+  }, [selectedChannel?.hostName])
+);
+  useEffect(() => {
+    loadChannel();
+  }, []);
   return (
-       <SafeAreaView
+    <SafeAreaView
       edges={['top']}
       style={{
         flex: 1,
@@ -28,6 +69,7 @@ const FavouriteScreen = () => {
       <MainContainer>
         <View
           style={{
+            flex: 1,
             display: 'flex',
             flexDirection: 'column',
             gap: 50,
@@ -47,29 +89,52 @@ const FavouriteScreen = () => {
               }}>
               Favourites
             </Text>
-
-            <FlatList
-              data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-              keyExtractor={(index) => index.toString()}
-              renderItem={({item, index}) => (
-                <View style={{flex: 1, margin: 10}}>
-                  <VideoCard
-                    image={Imageimg}
-                    title="Blue Marucci - Space Coast Super NIT
-10 Maj (2024)"
-                    date="03/23/24"
-                    time="05:15 PM"
-                    videotime="01:47:48"
-                  />
-                </View>
-              )}
-              numColumns={5}
-            />
+            {isloading ? (
+              <View
+                style={{
+                  height: 300,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                <Spinner />
+              </View>
+            ) : (
+              <FlatList
+                data={favouriteVideos}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({item}) => (
+                  <View style={{flex: 1, margin: 1}}>
+                    <VideoCard
+                      key={item?.id}
+                      image={item?.thumbnail || Imageimg}
+                      title={item?.title || 'Untitled'}
+                      Startdate={item?.timestamp}
+                      videotime={item?.duration || '00:00:00'}
+                      onPress={() =>
+                    navigation.navigate('VideoDetail', {slug: item.slug})
+                  }
+                    />
+                  </View>
+                )}
+                numColumns={5}
+                ListEmptyComponent={
+                  <Text
+                    style={{
+                      color: '#fff',
+                      textAlign: 'center',
+                      marginTop: 20,
+                      fontSize: 38,
+                    }}>
+                    No Favourites Video
+                  </Text>
+                }
+              />
+            )}
           </View>
         </View>
       </MainContainer>
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default FavouriteScreen
+export default FavouriteScreen;

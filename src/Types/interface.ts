@@ -217,3 +217,18 @@ export interface VideoDetailLiveItemProps {
     adsIntervalTime: number;
   };
 }
+
+export interface FavouriteVideoItem {
+  id: number;
+  media_id: string;
+  title: string;
+  description: string | null;
+  type: 'VIDEO' | 'EVENT' | string;
+  duration: string; // format: "HH:mm:ss"
+  timestamp: string; // ISO date string
+  thumbnail: string;
+  slug: string;
+  channelId: number;
+  channelName: string;
+  channelUrl: string;
+}
