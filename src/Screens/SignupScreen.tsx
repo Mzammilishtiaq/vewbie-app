@@ -75,7 +75,7 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
   };
 
   const handleKeyPress = (key: string) => {
-    inputRef.current?.focus();
+    inputRef.current?.requestTVFocus?.();
     switch (key) {
       case 'BACKSPACE':
         setInputSignin((prev) => ({
@@ -92,7 +92,7 @@ const SignupScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
         break;
 
       case 'DONE':
-        signinButtonRef.current?.focus();
+        signinButtonRef.current?.requestTVFocus?.();
         break;
 
       default:

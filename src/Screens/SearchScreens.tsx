@@ -8,19 +8,31 @@ import {
   TextInput,
   View,
   Pressable,
+  TVFocusGuideView,
 } from '@amazon-devices/react-native-kepler';
+import {useNavigation} from '@amazon-devices/react-navigation__native';
+import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import TVKeyboard from '../components/Keyboard/TVKeyboard';
+import {useSearch} from '../Contexts/SearchContext';
+import {RootStackParamList} from '../Types/navigations';
+
+type SearchNavigationProp = StackNavigationProp<RootStackParamList, 'Search'>;
+
 const SearchScreens = () => {
+  const search = useSearch();
+  const navigation = useNavigation<SearchNavigationProp>();
   const [searchText, setSearchText] = React.useState('');
   const inputRef = React.useRef<TextInput>(null);
   const searchButtonRef = useRef<React.ElementRef<typeof Pressable>>(null);
   useEffect(() => {
-    if (searchButtonRef.current) {
-      searchButtonRef.current.focus();
-    }
+    const timer = setTimeout(() => {
+      searchButtonRef.current?.requestTVFocus?.();
+    }, 200);
+    return () => clearTimeout(timer);
   }, []);
+
   const handleKeyPress = (key: string) => {
-    inputRef.current?.focus();
+    inputRef.current?.requestTVFocus?.();
     switch (key) {
       case 'BACKSPACE':
         setSearchText((prev) => prev.slice(0, -1));
@@ -32,7 +44,7 @@ const SearchScreens = () => {
 
       case 'DONE':
         setTimeout(() => {
-          searchButtonRef.current?.focus();
+          searchButtonRef.current?.requestTVFocus?.();
         }, 100);
         break;
 
@@ -73,29 +85,34 @@ const SearchScreens = () => {
                 ref={inputRef}
                 style={styles.searchinput}
                 placeholder="Search..."
-                autoFocus={true}
                 value={searchText}
                 onChangeText={(text) => setSearchText(text)}
                 showSoftInputOnFocus={true}
               />
             </View>
-            <Pressable
-              ref={searchButtonRef}
-              focusable={true}
-              style={({focused, pressed}) => [
-                styles.buttons,
-                focused && {backgroundColor: '#3366FD'},
-              ]}>
-              <Text
-                style={{
-                  color: '#fff',
-                  fontSize: 26,
-                  textAlign: 'center',
-                  fontWeight: 'bold',
-                }}>
-                Search
-              </Text>
-            </Pressable>
+            <TVFocusGuideView autoFocus>
+              <Pressable
+                ref={searchButtonRef}
+                onPress={() => {
+                  navigation.navigate('Search', {query: searchText});
+                  search?.closeSearch();
+                }}
+                focusable={true}
+                style={({focused, pressed}) => [
+                  styles.buttons,
+                  focused && {backgroundColor: '#3366FD'},
+                ]}>
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 26,
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                  }}>
+                  Search
+                </Text>
+              </Pressable>
+            </TVFocusGuideView>
           </View>
           <TVKeyboard onKeyPress={handleKeyPress} />
         </View>

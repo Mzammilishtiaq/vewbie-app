@@ -42,7 +42,7 @@ const UseRemote = () => {
   const signinButtonRef = useRef<React.ElementRef<typeof Pressable>>(null);
   const [keyboardReset, setKeyboardReset] = React.useState(0);
   const handleKeyPress = (key: string) => {
-    inputRef.current?.focus();
+    inputRef.current?.requestTVFocus?.();
     switch (key) {
       case 'BACKSPACE':
         setInputSignin((prev) => ({
@@ -59,7 +59,7 @@ const UseRemote = () => {
         break;
 
       case 'DONE':
-        signinButtonRef.current?.focus();
+        signinButtonRef.current?.requestTVFocus?.();
         break;
 
       default:

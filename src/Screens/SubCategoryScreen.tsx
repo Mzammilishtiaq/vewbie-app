@@ -1,5 +1,5 @@
 import {StyleSheet, Text, View} from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
 import CategoryList from '../components/ChannelList';
@@ -16,10 +16,13 @@ import {VideoCard} from '../components/Cards/VideoCard';
 import {
   NavigationProp,
   RouteProp,
+  useFocusEffect,
 } from '@amazon-devices/react-navigation__native';
 import {RootStackParamList} from '../Types/navigations';
 import {backendCall} from '../services/backendCall';
 import {useChannelStore} from '../store/channelStore';
+import FilterModal from '../components/Modal/FilterModal';
+import Spinner from '../components/Spinner/Spinner';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'SubCategory'>;
@@ -27,7 +30,7 @@ type Props = {
 };
 
 const SubCategoryScreen = ({route, navigation}: Props) => {
-  const {slug, subCategories, CategoryName} = route.params;
+  const {slug, CategoryName} = route.params;
   const [modalVisible, setModalVisible] = React.useState(false);
   const modalVisibleRef = React.useRef(false);
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
@@ -40,19 +43,22 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
     modalVisibleRef.current = val;
     setModalVisible(val);
   };
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (activeSlug: any) => {
     if (!selectedChannel?.hostName) return;
     setIsLoading(true);
     try {
       const [subcategorydata, videodata] = await Promise.all([
         backendCall({
-          url: `/sub-categories/${slug}`,
+          url: `/sub-categories/${activeSlug}?columnOrder=videos&order=DESC&limit=12&offset=0`,
           method: 'GET',
           origin: selectedChannel.hostName,
         }),
         backendCall({
-          url: `/categories/${slug}/videos?limit=15&offset=0&start_date=null&end_date=null&search=&columnOrder=timestamp&order=desc`,
+          url: `/categories/${activeSlug}/videos?limit=15&offset=0&start_date=null&end_date=null&search=&columnOrder=timestamp&order=desc`,
           method: 'GET',
           origin: selectedChannel.hostName,
         }),
@@ -68,8 +74,24 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
     }
   };
   useEffect(() => {
-    fetchData();
+    if (!selectedChannel?.hostName) return;
+    fetchData(slug);
   }, [selectedChannel, slug]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedChannel?.hostName) return;
+      fetchData(slug);
+    }, [selectedChannel, slug]),
+  );
+  const handleSubCategoryPress = (itemSlug: string) => {
+    fetchData(itemSlug);
+  };
+
+  const filterRef = React.useRef(null);
+  const sortRef = React.useRef(null);
+  const subCategoryRef = React.useRef(null);
+  const subVideoRef = React.useRef(null);
   return (
     <SafeAreaView
       edges={['top']}
@@ -85,7 +107,9 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
             flexDirection: 'column',
             gap: 50,
           }}>
-          <CategoryList navigation={navigation} currentRoute={route.name} />
+          <View nativeID="channelSection">
+            <CategoryList navigation={navigation} currentRoute={route.name} />
+          </View>
           <View
             style={{
               display: 'flex',
@@ -120,15 +144,23 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
                 gap: 20,
               }}>
               <Pressable
-                style={{
-                  width: 98,
-                  height: 56,
-                  backgroundColor: 'rgba(217,217,217,0.1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
+                ref={filterRef}
+                nextFocusRight={sortRef.current}
+                nextFocusDown={subCategoryRef.current}
+                onPress={() => setFilterVisible(true)}
+                style={({focused}) => [
+                  {
+                    width: 98,
+                    height: 56,
+                    backgroundColor: focused
+                      ? 'rgb(1, 131, 253)'
+                      : 'rgba(217,217,217,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}>
                 <Text
                   style={{
                     fontSize: 20,
@@ -138,18 +170,25 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
                 </Text>
               </Pressable>
               <Pressable
+                ref={sortRef}
+                nextFocusRight={filterRef.current}
+                nextFocusDown={subCategoryRef.current}
                 onPress={() => setModal(true)}
-                style={{
-                  width: 310,
-                  height: 56,
-                  backgroundColor: 'rgba(217,217,217,0.1)',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 20,
-                  paddingVertical: 20,
-                }}>
+                style={({focused}) => [
+                  {
+                    width: 310,
+                    height: 56,
+                    backgroundColor: focused
+                      ? 'rgb(1, 131, 253)'
+                      : 'rgba(217,217,217,0.1)',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingHorizontal: 20,
+                    paddingVertical: 20,
+                  },
+                ]}>
                 <Text
                   style={{
                     fontSize: 20,
@@ -166,73 +205,105 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
               </Pressable>
             </View>
           </View>
-          <FlatList
-            horizontal
-            data={SubCategoriesSlugItem}
-            keyExtractor={(item, index) => index.toString()}
-            contentContainerStyle={{flexDirection: 'row'}}
-            scrollEnabled={true}
-            renderItem={({item, index}) => (
-              <View style={{margin: 10}}>
-                <SubCategoryCard
-                  image={item.subchannelLogo || undefined}
-                  title={item.categoryName}
-                  totalvideo={item.videos}
-                  hasTVPreferredFocus={index == 0}
+          {isloading ? (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              {isloading && <Spinner />}
+            </View>
+          ) : (
+            <>
+              <FlatList
+                ref={subCategoryRef}
+                horizontal
+                data={SubCategoriesSlugItem}
+                keyExtractor={(item, index) => index.toString()}
+                contentContainerStyle={{flexDirection: 'row'}}
+                scrollEnabled={true}
+                renderItem={({item, index}) => (
+                  <View style={{margin: 10}}>
+                    <SubCategoryCard
+                      image={item.subchannelLogo || undefined}
+                      title={item.categoryName}
+                      totalvideo={item.videos}
+                      hasTVPreferredFocus={index == 0}
+                      nextFocusUp={filterRef.current}
+                      nextFocusLeft={
+                        index === 0 ? `sub-item-${index}` : undefined
+                      }
+                      nextFocusRight={
+                        index === SubCategoriesSlugItem.length - 1
+                          ? `sub-item-${index}`
+                          : subCategoryRef.current
+                      }
+                      nextFocusDown={subVideoRef.current}
+                      onPress={() => handleSubCategoryPress(item.categorySlug)}
+                    />
+                  </View>
+                )}
+              />
+              <View
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 20,
+                }}>
+                <Text
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 'bold',
+                    color: '#fff',
+                  }}>
+                  Videos
+                </Text>
+
+                <FlatList
+                  ref={subVideoRef}
+                  data={VideoSlugItem}
+                  keyExtractor={(item, index) => index.toString()}
+                  contentContainerStyle={{paddingBottom: 300}}
+                  numColumns={5}
+                  showsVerticalScrollIndicator
+                  renderItem={({item, index}) => (
+                    <View style={{margin: 10}}>
+                      <VideoCard
+                        title={item?.title}
+                        image={item?.thumbnail}
+                        videotime={item?.duration}
+                        onPress={() =>
+                          navigation.navigate('VideoDetail', {slug: item.slug})
+                        }
+                        nextFocusUp={subVideoRef.current}
+                        hasTVPreferredFocus={index === 0}
+                      />
+                    </View>
+                  )}
+                  ListEmptyComponent={() => (
+                    <View
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        flex: 1,
+                        marginTop: 100,
+                      }}>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontWeight: 'bold',
+                          fontSize: 50,
+                        }}>
+                        Video Not Found
+                      </Text>
+                    </View>
+                  )}
                 />
               </View>
-            )}
-          />
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 20,
-            }}>
-            <Text
-              style={{
-                fontSize: 34,
-                fontWeight: 'bold',
-                color: '#fff',
-              }}>
-              Videos
-            </Text>
-
-            <FlatList
-              data={VideoSlugItem}
-              keyExtractor={(item, index) => index.toString()}
-              contentContainerStyle={{paddingBottom: 300}}
-              numColumns={5}
-              showsVerticalScrollIndicator
-              renderItem={({item}) => (
-                <View style={{margin: 10}}>
-                  <VideoCard
-                    title={item?.title}
-                    image={item?.thumbnail}
-                    videotime={item?.duration}
-                    onPress={() =>
-                      navigation.navigate('VideoDetail', {slug: item.slug})
-                    }
-                  />
-                </View>
-              )}
-              ListEmptyComponent={() => (
-                <View
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    flex: 1,
-                    marginTop: 100,
-                  }}>
-                  <Text
-                    style={{color: '#fff', fontWeight: 'bold', fontSize: 50}}>
-                    Video Not Found
-                  </Text>
-                </View>
-              )}
-            />
-          </View>
+            </>
+          )}
         </View>
 
         <Modal
@@ -349,6 +420,14 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
             </View>
           </View>
         </Modal>
+        <FilterModal
+          visible={filterVisible}
+          onClose={() => setFilterVisible(false)}
+          onApply={({start, end}: any) => {
+            setStartDate(start.toISOString());
+            setEndDate(end.toISOString());
+          }}
+        />
       </MainContainer>
     </SafeAreaView>
   );

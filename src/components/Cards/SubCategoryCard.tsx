@@ -10,6 +10,10 @@ interface SubCategoryProps {
   onPress?: () => void;
   onFocus?: () => void;
   hasTVPreferredFocus?: boolean;
+  nextFocusLeft?: any;
+  nextFocusRight?: any;
+  nextFocusUp?: any;
+  nextFocusDown?: any;
 }
 const SubCategoryCard = ({
   image,
@@ -18,8 +22,11 @@ const SubCategoryCard = ({
   onFocus,
   onPress,
   hasTVPreferredFocus,
+  nextFocusDown,
+  nextFocusLeft,
+  nextFocusRight,
+  nextFocusUp,
 }: SubCategoryProps) => {
-  const [isFocused, setIsFocused] = React.useState(false);
   const getDisplayText = (title?: string) => {
     if (!title) return '';
 
@@ -38,18 +45,18 @@ const SubCategoryCard = ({
   };
   return (
     <Pressable
-      onFocus={() => {
-        setIsFocused(true);
-        if (onFocus) onFocus();
-      }}
-      onBlur={() => setIsFocused(false)}
+      onFocus={onFocus}
       onPress={onPress}
       hasTVPreferredFocus={hasTVPreferredFocus}
+      nextFocusLeft={nextFocusLeft}
+      nextFocusRight={nextFocusRight}
+      nextFocusUp={nextFocusUp}
+      nextFocusDown={nextFocusDown}
       style={({focused}) => [
         {
           width: 393,
           height: 99,
-          backgroundColor: isFocused ? '#fff' : 'rgba(217,217,217,0.1)',
+          backgroundColor: focused ? '#fff' : 'rgba(217,217,217,0.1)',
           borderRadius: 8,
           display: 'flex',
           flexDirection: 'row',
@@ -59,55 +66,59 @@ const SubCategoryCard = ({
           overflow: 'hidden',
         },
       ]}>
-      {image == null ? (
-        <View
-          style={{
-            width: 69,
-            height: 69,
-            backgroundColor: '#010570',
-            borderRadius: 10,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          <Text style={{color: '#fff', fontSize: 25}}>
-            {getDisplayText(title)}
-          </Text>
-        </View>
-      ) : (
-        <Image
-          source={typeof image === 'string' ? {uri: image} : image}
-          width={69}
-          height={69}
-          resizeMode="cover"
-          style={{
-            borderRadius: 8,
-          }}
-        />
+      {({focused}) => (
+        <>
+          {image == null ? (
+            <View
+              style={{
+                width: 69,
+                height: 69,
+                backgroundColor: '#010570',
+                borderRadius: 10,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#fff', fontSize: 25}}>
+                {getDisplayText(title)}
+              </Text>
+            </View>
+          ) : (
+            <Image
+              source={typeof image === 'string' ? {uri: image} : image}
+              width={69}
+              height={69}
+              resizeMode="cover"
+              style={{
+                borderRadius: 8,
+              }}
+            />
+          )}
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+            }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: '500',
+                color: focused ? '#000' : '#fff',
+              }}>
+              {title}
+            </Text>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: '500',
+                color: focused ? '#000' : 'rgba(255,255,225,0.82)',
+              }}>
+              {totalvideo} videos
+            </Text>
+          </View>
+        </>
       )}
-      <View
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 5,
-        }}>
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: '500',
-            color: isFocused ? '#000' : '#fff',
-          }}>
-          {title}
-        </Text>
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: '500',
-            color: isFocused ? '#000' : 'rgba(255,255,225,0.82)',
-          }}>
-          {totalvideo} videos
-        </Text>
-      </View>
     </Pressable>
   );
 };

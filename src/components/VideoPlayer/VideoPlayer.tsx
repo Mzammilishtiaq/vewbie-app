@@ -1,4 +1,11 @@
-import React, {useEffect, useRef, useImperativeHandle, forwardRef} from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+  useState,
+} from 'react';
 import {View, StyleSheet} from 'react-native';
 import {
   VideoPlayer,
@@ -8,81 +15,119 @@ import {
 export type VegaVideoPlayerRef = {
   play: () => void;
   pause: () => void;
-  stop: () => void;
-  setSource: (url: string) => void;
+  toggle: () => void;
+  forward: () => void;
+  backward: () => void;
 };
 
 type Props = {
   source: string;
+  type: string;
   autoPlay?: boolean;
-  style?: any;
-  onReady?: (player: VideoPlayer) => void;
+  onProgress?: (current: number, duration: number) => void;
+  onBuffer?: (loading: boolean) => void;
 };
 
 const VegaVideoPlayer = forwardRef<VegaVideoPlayerRef, Props>(
-  ({source, autoPlay = true, style, onReady}, ref) => {
-    const playerRef = useRef<VideoPlayer | null>(null);
-    const initialized = useRef(false);
-
-    // ✅ Create player once
-    if (!playerRef.current) {
-      playerRef.current = new VideoPlayer();
-    }
-
+  ({source, type, autoPlay = true, onProgress, onBuffer}, ref) => {
+    const playerRef = useRef(new VideoPlayer());
     const player = playerRef.current;
+    const [isInitialized, setIsInitialized] = useState(false);
 
-    // ✅ Expose methods to parent
-    useImperativeHandle(ref, () => ({
-      play: () => player?.play(),
-      pause: () => player?.pause(),
-      stop: () => player?.pause(),
-      setSource: (url: string) => {
-        if (player) player.src = url;
-      },
-    }));
+    const [isPlaying, setIsPlaying] = useState(false);
 
-    // ✅ Initialize only once or when source changes
-    useEffect(() => {
-      let isMounted = true;
+    const skip = useCallback((sec: number) => {
+      const current = player.currentTime ?? 0;
+      const duration = player.duration ?? 0;
 
-      const init = async () => {
-        try {
-          if (!player || initialized.current) return;
+      let next = current + sec;
+      next = Math.max(0, Math.min(next, duration));
 
-          await player.initialize();
+      player.currentTime = next;
+    }, []);
 
-          if (!isMounted) return;
-
-          player.src = source;
-
-          onReady?.(player);
-
-          if (autoPlay) {
+    useImperativeHandle(
+      ref,
+      () => ({
+        play: () => player.play(),
+        pause: () => player.pause(),
+        toggle: () => {
+          if (isPlaying) {
+            player.pause();
+          } else {
             player.play();
           }
+        },
+        forward: () => skip(10),
+        backward: () => skip(-10),
+      }),
+      [isPlaying, player, skip],
+    );
 
-          initialized.current = true;
+    // INIT
+    useEffect(() => {
+      let mounted = true;
+
+      const initPlayer = async () => {
+        try {
+          await player.initialize();
+          player.controls = false;
+          if (mounted) {
+            setIsInitialized(true);
+          }
         } catch (error) {
-          console.error('Vega Video Init Error:', error);
+          console.error('Video player initialize failed:', error);
         }
       };
 
-      init();
+      initPlayer();
 
       return () => {
-        isMounted = false;
-
-        try {
-          player?.pause();
-        } catch (e) {
-          console.warn('Video cleanup error:', e);
-        }
+        mounted = false;
       };
-    }, [source]);
+    }, [player]);
+
+    // SOURCE
+    useEffect(() => {
+      if (!source || !isInitialized) return;
+
+      player.src = source;
+      player.controls = false;
+
+      if (autoPlay) {
+        player.play();
+      }
+    }, [autoPlay, isInitialized, player, source, type]);
+
+    // EVENTS
+    useEffect(() => {
+      const onPlay = () => setIsPlaying(true);
+      const onPause = () => setIsPlaying(false);
+      const onWaiting = () => onBuffer?.(true);
+      const onPlaying = () => onBuffer?.(false);
+
+      const interval = setInterval(() => {
+        onProgress?.(player.currentTime || 0, player.duration || 0);
+      }, 500);
+
+      player.addEventListener('play', onPlay);
+      player.addEventListener('pause', onPause);
+      player.addEventListener('waiting', onWaiting);
+      player.addEventListener('playing', onPlaying);
+
+      return () => {
+        clearInterval(interval);
+
+        player.removeEventListener('play', onPlay);
+        player.removeEventListener('pause', onPause);
+        player.removeEventListener('waiting', onWaiting);
+        player.removeEventListener('playing', onPlaying);
+      };
+    }, []);
 
     return (
-      <View style={[styles.container, style]}>
-        <KeplerVideoView videoPlayer={player} />
+      <View style={styles.container}>
+        <KeplerVideoView videoPlayer={player} focusable={false} />
       </View>
     );
   },

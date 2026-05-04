@@ -70,13 +70,13 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress, focusIndex}) => {
 
     // restore focus
     setTimeout(() => {
-      keyRefs.current[row]?.[col]?.focus?.();
+      keyRefs.current[row]?.[col]?.requestTVFocus?.();
     }, 0);
   };
 
   React.useEffect(() => {
     if (focusIndex !== undefined && keyRefs.current[0]?.[focusIndex]) {
-      keyRefs.current[0][focusIndex]?.focus?.();
+      keyRefs.current[0][focusIndex]?.requestTVFocus?.();
     }
   }, [focusIndex]);
   return (
@@ -204,7 +204,7 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress, focusIndex}) => {
           onPress={() => {
             onKeyPress?.('BACKSPACE');
             setTimeout(() => {
-              backspaceRef.current?.focus?.();
+              backspaceRef.current?.requestTVFocus?.();
             }, 0);
           }}
           style={({focused}: any) => [
@@ -237,7 +237,7 @@ const TVKeyboard: React.FC<Props> = ({onKeyPress, focusIndex}) => {
           onPress={() => {
             onKeyPress?.('SPACE');
             setTimeout(() => {
-              spaceRef.current?.focus?.();
+              spaceRef.current?.requestTVFocus?.();
             }, 0);
           }}
           style={({focused}) => [

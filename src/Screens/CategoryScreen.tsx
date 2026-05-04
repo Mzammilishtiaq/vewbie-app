@@ -88,6 +88,7 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
   }, [selectedChannel, selectedSort]);
 
   useEffect(() => {
+    if (!selectedChannel?.hostName) return;
     FetchAllCategoryList();
   }, [
     FetchAllCategoryList,
@@ -95,14 +96,10 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
     selectedSort.order,
     selectedChannel,
   ]);
-  const hasLoaded = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasLoaded.current) {
-        FetchAllCategoryList();
-        hasLoaded.current = true;
-      }
+      FetchAllCategoryList();
     }, [FetchAllCategoryList]),
   );
 

@@ -232,3 +232,12 @@ export interface FavouriteVideoItem {
   channelName: string;
   channelUrl: string;
 }
+export interface SearchVideoResultProps {
+  title: string
+  slug: string
+  type: string
+  thumbnail: string
+  duration: string
+  isFree: boolean
+  timestamp: string
+}

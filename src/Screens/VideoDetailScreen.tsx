@@ -262,120 +262,126 @@ const VideoDetailScreen = () => {
                     <Text style={styles.subText}>{selectedChannel?.name}</Text>
                   </View>
                 </View>
-                {!PayToWatchSubscriptionbool&&<View style={styles.bottomSection}>
-                  <InfoRow
-                    icon={CalandarIcon}
-                    text={VideoDetailItem?.timestamp}
-                  />
+                {!PayToWatchSubscriptionbool && (
+                  <View style={styles.bottomSection}>
+                    <InfoRow
+                      icon={CalandarIcon}
+                      text={VideoDetailItem?.timestamp}
+                    />
 
-                  <View style={styles.buttonRow}>
-                    {canWatchOrStream && contentType === 'VIDEO' && (
-                      <ActionButton
-                        icon={PlayVideoIconWhite}
-                        label="Play Video"
-                        focuedicon={PlayVideoIconBlack}
-                        hasTVPreferredFocus={true}
-                        onPress={() => navigation.navigate('Watch')}
-                      />
-                    )}
-                    {canWatchOrStream && contentType === 'EVENT' && (
-                      <ActionButton
-                        label="Offline Stream"
-                        hasTVPreferredFocus={true}
-                      />
-                    )}
-                    {shouldShowUnlock && (
-                      <ActionButton
-                        icon={UnlockVideoWhiteIcon}
-                        focuedicon={UnlockVideoIcon}
-                        label="Unlock Video"
-                        hasTVPreferredFocus={true}
-                        onPress={() => {
-                          if (!isLoggedIn) {
-                            setRedirect('VideoDetail', {slug, sluglive});
-                            navigation.navigate('Login');
-                          } else {
-                            setPayToWatchSubscriptionBool(true);
-                          }
-                        }}
-                      />
-                    )}
-                    {isLoggedIn &&
-                      contentType === 'VIDEO' &&
-                      (isFav === 0 ? (
+                    <View style={styles.buttonRow}>
+                      {canWatchOrStream && contentType === 'VIDEO' && (
                         <ActionButton
-                          icon={FavarateWhiteIcon}
-                          label="Favourite"
-                          focuedicon={FavarateBlackIcon}
-                          onPress={() => handleFavourite(1)}
+                          icon={PlayVideoIconWhite}
+                          label="Play Video"
+                          focuedicon={PlayVideoIconBlack}
+                          hasTVPreferredFocus={true}
+                          onPress={() => navigation.navigate('Watch')}
                         />
-                      ) : isFav === 1 ? (
+                      )}
+                      {canWatchOrStream && contentType === 'EVENT' && (
                         <ActionButton
-                          icon={UnFavarateWhiteIcon}
-                          label="Unfavourite"
-                          focuedicon={UnFavarateBlackIcon}
-                          onPress={() => handleFavourite(0)}
+                          label="Offline Stream"
+                          hasTVPreferredFocus={true}
                         />
-                      ) : null)}
+                      )}
+                      {shouldShowUnlock && (
+                        <ActionButton
+                          icon={UnlockVideoWhiteIcon}
+                          focuedicon={UnlockVideoIcon}
+                          label="Unlock Video"
+                          hasTVPreferredFocus={true}
+                          onPress={() => {
+                            if (!isLoggedIn) {
+                              setRedirect('VideoDetail', {slug, sluglive});
+                              navigation.navigate('Login');
+                            } else {
+                              setPayToWatchSubscriptionBool(true);
+                            }
+                          }}
+                        />
+                      )}
+                      {isLoggedIn &&
+                        contentType === 'VIDEO' &&
+                        (isFav === 0 ? (
+                          <ActionButton
+                            icon={FavarateWhiteIcon}
+                            label="Favourite"
+                            focuedicon={FavarateBlackIcon}
+                            onPress={() => handleFavourite(1)}
+                          />
+                        ) : isFav === 1 ? (
+                          <ActionButton
+                            icon={UnFavarateWhiteIcon}
+                            label="Unfavourite"
+                            focuedicon={UnFavarateBlackIcon}
+                            onPress={() => handleFavourite(0)}
+                          />
+                        ) : null)}
+                    </View>
                   </View>
-                </View>}
+                )}
                 {PayToWatchSubscriptionbool ? (
                   <PayToWatchSubscription />
                 ) : (
-                  <View style={styles.bottomSection}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                      }}>
-                      <Text
+                  retatedvideoitem.length > 0 && (
+                    <View style={styles.bottomSection}>
+                      <View
                         style={{
-                          fontSize: 34,
-                          fontWeight: '600',
-                          color: '#fff',
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          width: '100%',
                         }}>
-                        Retated Video
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 25,
-                          color: 'white',
-                          marginTop: 5,
-                          fontWeight: 'bold',
-                        }}>
-                        {activeretatedvideoindex + 1} /{' '}
-                        {retatedvideoitem.length}
-                      </Text>
+                        <Text
+                          style={{
+                            fontSize: 34,
+                            fontWeight: '600',
+                            color: '#fff',
+                          }}>
+                          Retated Video
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 25,
+                            color: 'white',
+                            marginTop: 5,
+                            fontWeight: 'bold',
+                          }}>
+                          {activeretatedvideoindex + 1} /{' '}
+                          {retatedvideoitem.length}
+                        </Text>
+                      </View>
+                      <FlatList
+                        horizontal
+                        data={retatedvideoitem}
+                        keyExtractor={(item, index) => index.toString()}
+                        contentContainerStyle={{flexDirection: 'row'}}
+                        scrollEnabled={true}
+                        renderItem={({item}) => (
+                          <View style={{margin: 10}}>
+                            <VideoCard
+                              image={item.thumbnail}
+                              title={item.name}
+                              videotime={item.duration}
+                              Startdate={item.timestamp}
+                              onPress={() =>
+                                navigation.navigate('VideoDetail', {
+                                  slug: item.slug,
+                                })
+                              }
+                              onFocus={() => {
+                                const realIndex = getIndexupcomingById(
+                                  item.slug,
+                                );
+                                setActiveRetatedVideoIndex(realIndex);
+                              }}
+                            />
+                          </View>
+                        )}
+                        ListFooterComponent={isLoading ? <Spinner /> : null}
+                      />
                     </View>
-                    <FlatList
-                      horizontal
-                      data={retatedvideoitem}
-                      keyExtractor={(item, index) => index.toString()}
-                      contentContainerStyle={{flexDirection: 'row'}}
-                      scrollEnabled={true}
-                      renderItem={({item}) => (
-                        <View style={{margin: 10}}>
-                          <VideoCard
-                            image={item.thumbnail}
-                            title={item.name}
-                            videotime={item.duration}
-                            Startdate={item.timestamp}
-                            onPress={() =>
-                              navigation.navigate('VideoDetail', {
-                                slug: item.slug,
-                              })
-                            }
-                            onFocus={() => {
-                              const realIndex = getIndexupcomingById(item.slug);
-                              setActiveRetatedVideoIndex(realIndex);
-                            }}
-                          />
-                        </View>
-                      )}
-                      ListFooterComponent={isLoading ? <Spinner /> : null}
-                    />
-                  </View>
+                  )
                 )}
               </>
             )}

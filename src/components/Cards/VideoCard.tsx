@@ -12,6 +12,11 @@ interface CardProps {
   videotime?: string;
   onPress?: () => void;
   onFocus?: () => void;
+  hasTVPreferredFocus?: boolean;
+  nextFocusLeft?: any;
+  nextFocusRight?: any;
+  nextFocusUp?: any;
+  nextFocusDown?: any;
 }
 
 const getDisplayText = (title?: string) => {
@@ -37,6 +42,11 @@ export const VideoCard = ({
   videotime,
   onPress,
   onFocus,
+  hasTVPreferredFocus,
+  nextFocusDown,
+  nextFocusLeft,
+  nextFocusRight,
+  nextFocusUp,
 }: CardProps) => {
   const [isFocused, setIsFocused] = React.useState(false);
   const dates = Startdate;
@@ -57,6 +67,11 @@ export const VideoCard = ({
             onFocus && onFocus();
           }}
           onBlur={() => setIsFocused(false)}
+          hasTVPreferredFocus={hasTVPreferredFocus}
+          nextFocusLeft={nextFocusLeft}
+          nextFocusRight={nextFocusRight}
+          nextFocusUp={nextFocusUp}
+          nextFocusDown={nextFocusDown}
           style={({pressed, focused}) => [
             styles.pressable,
             focused && styles.focused,
