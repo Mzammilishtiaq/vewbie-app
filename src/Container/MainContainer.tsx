@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(17, 15, 27, 0.8)',
+    backgroundColor: 'rgba(17, 15, 27, 0.9)',
     opacity: 0.9,
   },
 });

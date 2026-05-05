@@ -15,10 +15,11 @@ import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import TVKeyboard from '../components/Keyboard/TVKeyboard';
 import {useSearch} from '../Contexts/SearchContext';
 import {RootStackParamList} from '../Types/navigations';
-
+import {useChannelStore} from '../store/channelStore';
 type SearchNavigationProp = StackNavigationProp<RootStackParamList, 'Search'>;
 
 const SearchScreens = () => {
+  const {selectedChannel,loadChannel}= useChannelStore()
   const search = useSearch();
   const navigation = useNavigation<SearchNavigationProp>();
   const [searchText, setSearchText] = React.useState('');
@@ -53,10 +54,14 @@ const SearchScreens = () => {
         break;
     }
   };
+
+  React.useEffect(() => {
+      loadChannel()
+  }, [])
   return (
     <View style={styles.modalBox}>
       <View style={styles.submodalbox}>
-        <Text style={styles.modalTitle}>Search in Baseball</Text>
+        <Text style={styles.modalTitle}>Search in {selectedChannel?.name}</Text>
         <View style={styles.modalBoxflex}>
           <View
             style={{

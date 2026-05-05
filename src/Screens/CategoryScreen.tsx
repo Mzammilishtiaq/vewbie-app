@@ -21,6 +21,7 @@ import {
 import {backendCall} from '../services/backendCall';
 import {useChannelStore} from '../store/channelStore';
 import Spinner from '../components/Spinner/Spinner';
+import SortModal from '../components/Modal/SortModal';
 
 const sortOptions = [
   {
@@ -56,7 +57,8 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
   const [listCategoriesPatterns, setListCategoriesPatterns] = useState<
     listCategoriesPatternsProps[]
   >([]);
-
+  const sortRef = useRef<any>(null);
+  const listRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
@@ -87,20 +89,16 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
       });
   }, [selectedChannel, selectedSort]);
 
-  useEffect(() => {
-    if (!selectedChannel?.hostName) return;
-    FetchAllCategoryList();
-  }, [
-    FetchAllCategoryList,
-    selectedSort.columnOrder,
-    selectedSort.order,
-    selectedChannel,
-  ]);
-
   useFocusEffect(
     useCallback(() => {
+      if (!selectedChannel?.hostName) return;
       FetchAllCategoryList();
-    }, [FetchAllCategoryList]),
+    }, [
+      FetchAllCategoryList,
+      selectedSort.columnOrder,
+      selectedSort.order,
+      selectedChannel,
+    ]),
   );
 
   const renderCategory = useCallback(
@@ -118,29 +116,13 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
             })
           }
           hasTVPreferredFocus={index == 0}
+          nextFocusUp={sortRef.current}
+          contentstyle={{width: 326, height: 200}}
+          imagestyle={{width: 326, height: 200}}
         />
       </View>
     ),
     [navigation],
-  );
-
-  const renderSortItem = useCallback(
-    (item: {id: number; label: string; columnOrder: string; order: string}) => (
-      <Pressable
-        hasTVPreferredFocus={item.id === 1}
-        key={item.id}
-        onPress={() => {
-          setSelectedSort(item);
-          setModal(false);
-        }}
-        style={({focused}) => [
-          styles.sortItem,
-          focused && styles.sortItemFocused,
-        ]}>
-        <Text style={styles.sortText}>{item.label}</Text>
-      </Pressable>
-    ),
-    [setModal],
   );
 
   return (
@@ -155,6 +137,12 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
 
             <View style={styles.sortContainer}>
               <Pressable
+                ref={sortRef}
+                nextFocusDown={
+                  listCategoriesPatterns.length > 0
+                    ? listRef.current
+                    : undefined
+                }
                 onPress={() => setModal(true)}
                 style={({focused}) => [
                   styles.sortby,
@@ -173,6 +161,7 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
             </View>
           ) : (
             <FlatList
+              ref={listRef}
               data={listCategoriesPatterns}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderCategory}
@@ -184,21 +173,13 @@ const CategoryScreen = ({navigation}: {navigation: NavigationProp<any>}) => {
         </View>
 
         {/* MODAL */}
-        <Modal
+        <SortModal
           visible={modalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setModal(false)}>
-          <View style={styles.overlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Sort By</Text>
-
-              <View style={styles.modalList}>
-                {sortOptions.map(renderSortItem)}
-              </View>
-            </View>
-          </View>
-        </Modal>
+          onClose={() => setModal(false)}
+          options={sortOptions}
+          selected={selectedSort}
+          onSelect={setSelectedSort}
+        />
       </MainContainer>
     </SafeAreaView>
   );
@@ -256,7 +237,7 @@ const styles = StyleSheet.create({
 
   itemContainer: {
     flex: 1,
-    margin: 20,
+    margin: 30,
   },
 
   listContent: {

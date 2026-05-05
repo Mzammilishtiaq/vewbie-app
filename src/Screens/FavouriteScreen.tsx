@@ -4,7 +4,10 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import {FlatList} from '@amazon-devices/react-native-kepler';
 import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
-import {useFocusEffect, useNavigation} from '@amazon-devices/react-navigation__native';
+import {
+  useFocusEffect,
+  useNavigation,
+} from '@amazon-devices/react-navigation__native';
 
 import Imageimg from '../assets/image.png';
 
@@ -17,7 +20,10 @@ import Spinner from '../components/Spinner/Spinner';
 import {FavouriteVideoItem} from '../Types/interface';
 import {RootStackParamList} from '../Types/navigations';
 
-type FavouriteNavigationProp = StackNavigationProp<RootStackParamList, 'Favorite'>;
+type FavouriteNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Favorite'
+>;
 
 const FavouriteScreen = () => {
   const navigation = useNavigation<FavouriteNavigationProp>();
@@ -26,35 +32,35 @@ const FavouriteScreen = () => {
     [],
   );
   const [isloading, setIsloading] = useState(false);
-const fetchFaverateVideo = async () => {
-      if (!selectedChannel?.hostName) return;
-      setIsloading(true);
-      try {
-        const response = await backendCall({
-          method: 'GET',
-          url: '/get-user-media-by-user?tab=favorities',
-          origin: selectedChannel.hostName,
-        });
-        console.log('Favourite videos response:', response.data);
-        setFavouriteVideos(response?.data || []);
-      } catch (error) {
-        console.error('Error fetching favourite videos:', error);
-      } finally {
-        setIsloading(false);
-      }
-    };
+  const fetchFaverateVideo = async () => {
+    if (!selectedChannel?.hostName) return;
+    setIsloading(true);
+    try {
+      const response = await backendCall({
+        method: 'GET',
+        url: '/get-user-media-by-user?tab=favorities',
+        origin: selectedChannel.hostName,
+      });
+      console.log('Favourite videos response:', response.data);
+      setFavouriteVideos(response?.data || []);
+    } catch (error) {
+      console.error('Error fetching favourite videos:', error);
+    } finally {
+      setIsloading(false);
+    }
+  };
   useEffect(() => {
     if (!selectedChannel?.hostName) return;
     fetchFaverateVideo();
   }, [selectedChannel]);
 
-    useFocusEffect(
-  useCallback(() => {
-    if (!selectedChannel?.hostName) return;
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedChannel?.hostName) return;
 
-    fetchFaverateVideo();
-  }, [selectedChannel?.hostName])
-);
+      fetchFaverateVideo();
+    }, [selectedChannel?.hostName]),
+  );
   useEffect(() => {
     loadChannel();
   }, []);
@@ -102,7 +108,7 @@ const fetchFaverateVideo = async () => {
               <FlatList
                 data={favouriteVideos}
                 keyExtractor={(item) => String(item.id)}
-                renderItem={({item}) => (
+                renderItem={({item, index}) => (
                   <View style={{flex: 1, margin: 1}}>
                     <VideoCard
                       key={item?.id}
@@ -110,9 +116,10 @@ const fetchFaverateVideo = async () => {
                       title={item?.title || 'Untitled'}
                       Startdate={item?.timestamp}
                       videotime={item?.duration || '00:00:00'}
+                      hasTVPreferredFocus={index === 0}
                       onPress={() =>
-                    navigation.navigate('VideoDetail', {slug: item.slug})
-                  }
+                        navigation.navigate('VideoDetail', {slug: item.slug})
+                      }
                     />
                   </View>
                 )}

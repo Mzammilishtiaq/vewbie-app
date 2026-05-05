@@ -185,13 +185,14 @@ const VideoDetailScreen = () => {
   };
 
   useEffect(() => {
+    loadChannel();
+  }, []);
+
+  useEffect(() => {
     if (selectedChannel?.hostName && (slug || sluglive)) {
       fetchVideoData();
     }
   }, [selectedChannel?.hostName, slug, sluglive]);
-  useEffect(() => {
-    loadChannel();
-  }, [loadChannel]);
 
   useEffect(() => {
     const nextPoster = VideoDetailItem?.playerSettings?.poster_url || null;
@@ -220,7 +221,7 @@ const VideoDetailScreen = () => {
           <View style={styles.overlay} />
 
           <View style={styles.content}>
-            <ChannelList />
+            <ChannelList navigation={navigation} currentRoute={route.name}/>
 
             {isLoading ? (
               <View
@@ -276,7 +277,7 @@ const VideoDetailScreen = () => {
                           label="Play Video"
                           focuedicon={PlayVideoIconBlack}
                           hasTVPreferredFocus={true}
-                          onPress={() => navigation.navigate('Watch')}
+                          onPress={() => navigation.navigate('Watch',{hlsURL:VideoDetailItem?.playerSettings?.hlsURL || ''})}
                         />
                       )}
                       {canWatchOrStream && contentType === 'EVENT' && (

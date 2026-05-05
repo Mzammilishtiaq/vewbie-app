@@ -20,6 +20,7 @@ import VideoDetailScreen from './Screens/VideoDetailScreen';
 import {useAuthStore} from './store/authStore';
 import SettingScreen from './Screens/SettingScreen';
 import SearchResultScreen from './Screens/SearchResultScreen';
+import VideoScreen from './Screens/VideoScreen';
 const Stack = createStackNavigator<RootStackParamList>();
 enableFreeze();
 enableScreens();
@@ -52,6 +53,7 @@ export const App = () => {
             <Stack.Screen name="Settings" component={SettingScreen} />
             <Stack.Screen name="Login" component={SigninScreen} />
             <Stack.Screen name="Signup" component={SignupScreen} />
+            <Stack.Screen name="Watch" component={VideoScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SearchProvider>

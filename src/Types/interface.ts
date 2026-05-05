@@ -154,6 +154,7 @@ export interface VideoDetailItemProps {
     slug: string;
   }[];
   playerSettings: {
+    hlsURL: string;
     poster_url: string;
     isMediaAds: string; // e.g. "PRE_ROLL"
     adsIntervalTime: number;
@@ -240,4 +241,18 @@ export interface SearchVideoResultProps {
   duration: string
   isFree: boolean
   timestamp: string
+}
+
+export interface categorylistModalProps {
+  id: number;
+  name: string;
+  slug: string;
+  layout: string;
+  sub_categories_count: string;
+  thumbnail: string;
+  parent_id: number;
+  subchannel_id: number;
+  hostName: string;
+  promoted: boolean;
+  sub_categories: null;
 }

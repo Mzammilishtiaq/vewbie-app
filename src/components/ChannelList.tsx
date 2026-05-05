@@ -78,7 +78,7 @@ const ChannelList = ({navigation, currentRoute}: ChannelListProps) => {
           <Image source={{uri: item.brandedUrl}} style={styles.image} />
           {isSelected ? (
             <Image source={CategoryPress} style={styles.overlay} />
-          ) : isFocused ? (
+          ) : isFocused && !isSelected ? (
             <Image source={CategoryFocus} style={styles.overlay} />
           ) : null}
         </>

@@ -19,6 +19,7 @@
     "release": "npm-run-all lint test build:app"
   },
   "dependencies": {
+    "@amazon-devices/expo-checkbox": "~2.0.0",
     "@amazon-devices/react-linear-gradient": "~2.0.0",
     "@amazon-devices/react-native-async-storage__async-storage": "~2.0.2+1.23.1",
     "@amazon-devices/react-native-device-info": "~2.0.0",

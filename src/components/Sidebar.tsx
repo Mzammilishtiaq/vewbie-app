@@ -1,5 +1,10 @@
-import {View, StyleSheet, Image, Pressable} from 'react-native';
 import React from 'react';
+import {
+  Pressable,
+  View,
+  StyleSheet,
+  Image,
+} from '@amazon-devices/react-native-kepler';
 import {
   useNavigationState,
   useNavigation,
@@ -34,6 +39,12 @@ const Sidebar = () => {
   const isActive = (route: keyof RootStackParamList) =>
     currentRouteName === route;
 
+  const SearchRef = React.useRef(null);
+  const homeRef = React.useRef(null);
+  const categoryRef = React.useRef(null);
+  const favoriteRef = React.useRef(null);
+  const settingRef = React.useRef(null);
+  const loginRef = React.useRef(null);
   return (
     <View style={styles.container}>
       {/* Logo */}
@@ -45,6 +56,9 @@ const Sidebar = () => {
         <View style={styles.menuTop}>
           {/* Search */}
           <Pressable
+            ref={SearchRef}
+            nextFocusDown={homeRef.current}
+            nextFocusUp={undefined}
             onPress={opensearch}
             style={({pressed, focused}: any) => [
               styles.menuItem,
@@ -63,6 +77,9 @@ const Sidebar = () => {
           <Pressable
             onPress={() => navigation.navigate('Home')}
             hasTVPreferredFocus={true}
+            ref={homeRef}
+            nextFocusUp={SearchRef.current}
+            nextFocusDown={categoryRef.current}
             style={({pressed, focused}: any) => [
               styles.menuItem,
               focused && styles.FocuedItem,
@@ -79,6 +96,9 @@ const Sidebar = () => {
           {/* Category */}
           <Pressable
             onPress={() => navigation.navigate('Category')}
+            ref={categoryRef}
+            nextFocusDown={isLoggedIn ? favoriteRef.current : loginRef.current}
+            nextFocusUp={homeRef.current}
             style={({pressed, focused}: any) => [
               styles.menuItem,
               focused && styles.FocuedItem,
@@ -100,6 +120,9 @@ const Sidebar = () => {
           {isLoggedIn && (
             <Pressable
               onPress={() => navigation.navigate('Favorite')}
+              ref={favoriteRef}
+              nextFocusUp={categoryRef.current}
+              nextFocusDown={settingRef.current}
               style={({pressed, focused}: any) => [
                 styles.menuItem,
                 focused && styles.FocuedItem,
@@ -122,6 +145,9 @@ const Sidebar = () => {
           {isLoggedIn ? (
             <Pressable
               onPress={() => navigation.navigate('Settings')}
+              ref={settingRef}
+              nextFocusUp={favoriteRef.current}
+              nextFocusDown={undefined}
               style={({pressed, focused}: any) => [
                 styles.menuItem,
                 focused && styles.FocuedItem,
@@ -131,6 +157,9 @@ const Sidebar = () => {
           ) : (
             <Pressable
               onPress={() => navigation.navigate('Login')}
+              ref={loginRef}
+              nextFocusUp={categoryRef.current}
+              nextFocusDown={undefined}
               style={({pressed, focused}: any) => [
                 styles.menuItem,
                 focused && styles.FocuedItem,
@@ -194,6 +223,7 @@ const styles = StyleSheet.create({
 
   PressedItem: {
     transform: [{scale: 0.95}],
+    backgroundColor: '#7C7C7C',
   },
 
   icon: {

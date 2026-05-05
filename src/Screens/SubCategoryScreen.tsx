@@ -2,7 +2,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/ChannelList';
+import ChannelList from '../components/ChannelList';
 import {
   FlatList,
   Image,
@@ -23,17 +23,46 @@ import {backendCall} from '../services/backendCall';
 import {useChannelStore} from '../store/channelStore';
 import FilterModal from '../components/Modal/FilterModal';
 import Spinner from '../components/Spinner/Spinner';
+import SortModal from '../components/Modal/SortModal';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'SubCategory'>;
   navigation: NavigationProp<any>;
 };
 
+const sortOptions = [
+  {
+    id: 1,
+    label: 'Latest Videos',
+    columnOrder: 'timestamp',
+    order: 'ASC',
+  },
+  {
+    id: 2,
+    label: 'Oldest Videos',
+    columnOrder: 'timestamp',
+    order: 'DESC',
+  },
+  {
+    id: 3,
+    label: 'A - Z',
+    columnOrder: 'category_name',
+    order: 'ASC',
+  },
+  {
+    id: 4,
+    label: 'Z - A',
+    columnOrder: 'category_name',
+    order: 'DESC',
+  },
+];
 const SubCategoryScreen = ({route, navigation}: Props) => {
   const {slug, CategoryName} = route.params;
   const [modalVisible, setModalVisible] = React.useState(false);
+   const [selectedSort, setSelectedSort] = useState(sortOptions[0]);
   const modalVisibleRef = React.useRef(false);
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
+  const LoadChannel = useChannelStore((s) => s.loadChannel);
   const [isloading, setIsLoading] = useState(false);
   const [SubCategoriesSlugItem, setSubCategoriesSlugItem] = useState<
     SubCategoriesSlugProps[]
@@ -58,7 +87,7 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
           origin: selectedChannel.hostName,
         }),
         backendCall({
-          url: `/categories/${activeSlug}/videos?limit=15&offset=0&start_date=null&end_date=null&search=&columnOrder=timestamp&order=desc`,
+          url: `/categories/${activeSlug}/videos?limit=15&offset=0&start_date=${startDate || ''}&end_date=${endDate || ''}&search=&columnOrder=${selectedSort.columnOrder}&order=${selectedSort.order}`,
           method: 'GET',
           origin: selectedChannel.hostName,
         }),
@@ -73,17 +102,18 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
       setIsLoading(false);
     }
   };
-  useEffect(() => {
-    if (!selectedChannel?.hostName) return;
-    fetchData(slug);
-  }, [selectedChannel, slug]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!selectedChannel?.hostName) return;
-      fetchData(slug);
-    }, [selectedChannel, slug]),
+       if (!selectedChannel?.hostName) return;
+        fetchData(slug);
+    }, [selectedChannel, slug,startDate,endDate,selectedSort.columnOrder,selectedSort.order]),
   );
+
+  useEffect(() => {
+    LoadChannel();
+  }, []);
+
   const handleSubCategoryPress = (itemSlug: string) => {
     fetchData(itemSlug);
   };
@@ -108,7 +138,7 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
             gap: 50,
           }}>
           <View nativeID="channelSection">
-            <CategoryList navigation={navigation} currentRoute={route.name} />
+            <ChannelList navigation={navigation} currentRoute={route.name} />
           </View>
           <View
             style={{
@@ -306,7 +336,7 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
           )}
         </View>
 
-        <Modal
+        {/* <Modal
           visible={modalVisible}
           transparent
           animationType="fade"
@@ -419,7 +449,15 @@ const SubCategoryScreen = ({route, navigation}: Props) => {
               </View>
             </View>
           </View>
-        </Modal>
+        </Modal> */}
+        {/* MODAL */}
+        <SortModal
+          visible={modalVisible}
+          onClose={() => setModal(false)}
+          options={sortOptions}
+          selected={selectedSort}
+          onSelect={setSelectedSort}
+        />
         <FilterModal
           visible={filterVisible}
           onClose={() => setFilterVisible(false)}

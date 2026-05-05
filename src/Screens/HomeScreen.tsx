@@ -9,7 +9,12 @@ import {
   useFocusEffect,
   useNavigation,
 } from '@amazon-devices/react-navigation__native';
-import {FlatList} from '@amazon-devices/react-native-kepler';
+import {
+  BackHandler,
+  FlatList,
+  Modal,
+  Pressable,
+} from '@amazon-devices/react-native-kepler';
 
 import {VideoCard} from '../components/Cards/VideoCard';
 import {CategoryCard} from '../components/Cards/CategoryCard';
@@ -30,7 +35,7 @@ type HomeNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 const HomeScreen = () => {
   const navigation = useNavigation<HomeNavigationProp>();
   const selectedChannel = useChannelStore((s) => s.selectedChannel);
-  console.log('selectedChannel?.hostName',selectedChannel?.hostName);
+  console.log('selectedChannel?.hostName', selectedChannel?.hostName);
   const selectedChannelload = useChannelStore((s) => s.loadChannel);
   const [listalllivesItem, setlistalllivesItem] = useState([]);
   const [ScheduleEventsItem, SetScheduleEventsItem] = useState<
@@ -55,7 +60,7 @@ const HomeScreen = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const onEndReachedCalledDuringMomentum = useRef(false);
-
+  const [showExitModal, setShowExitModal] = useState(false);
   const [activeLiveindex, setActiveLiveIndex] = useState(0);
   const [activescheduleindex, setActivescheduleIndex] = useState(0);
   const [activeCategoryindex, setActiveCategoryIndex] = useState(0);
@@ -204,6 +209,27 @@ const HomeScreen = () => {
       setActivePromotedIndex({});
     }, []),
   );
+
+  useFocusEffect(
+    useCallback(() => {
+      const backAction = () => {
+        if (showExitModal) {
+          setShowExitModal(false); // close modal if already open
+          return true;
+        }
+
+        setShowExitModal(true); // open modal
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction,
+      );
+
+      return () => backHandler.remove();
+    }, [showExitModal]),
+  );
   // ================= FOOTER LOADER =================
 
   const renderFooter = () => {
@@ -345,6 +371,9 @@ const HomeScreen = () => {
                       const realIndex = getIndexById(item.id);
                       setActiveCategoryIndex(realIndex);
                     }}
+                    imagestyle={{width: 326, height: 172}}
+                    contentstyle={{width: 326, height: 172}}
+                    contentpressstyle={{borderRadius: 10}}
                   />
 
                   {/* 👇 Last item ke baad SeeMore */}
@@ -551,6 +580,42 @@ const HomeScreen = () => {
             />
           )}
         </View>
+
+        <Modal visible={showExitModal} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>
+                Do you want to exit the app?
+              </Text>
+
+              <View style={styles.modalButtons}>
+                {/* ❌ NO */}
+                <Pressable
+                  hasTVPreferredFocus
+                  onPress={() => setShowExitModal(false)}
+                  style={({focused}) => [
+                    styles.modalBtn,
+                    focused && styles.modalBtnFocused,
+                  ]}>
+                  <Text style={styles.modalBtnText}>No</Text>
+                </Pressable>
+
+                {/* ✅ YES */}
+                <Pressable
+                  onPress={() => {
+                    setShowExitModal(false);
+                    BackHandler.exitApp();
+                  }}
+                  style={({focused}) => [
+                    styles.modalBtn,
+                    focused && styles.modalBtnFocused,
+                  ]}>
+                  <Text style={styles.modalBtnText}>Yes</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </MainContainer>
     </SafeAreaView>
   );
@@ -594,5 +659,54 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  // modal css
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalBox: {
+    width: 600,
+    backgroundColor: '#1B1927',
+    borderRadius: 10,
+    padding: 30,
+    gap: 30,
+    alignItems: 'center',
+  },
+
+  modalTitle: {
+    color: '#fff',
+    fontSize: 28,
+    textAlign: 'center',
+  },
+
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 30,
+  },
+
+  modalBtn: {
+    width: 150,
+    height: 70,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+
+  modalBtnFocused: {
+    backgroundColor: '#3366FD',
+    transform: [{scale: 1.05}], // 🔥 TV UX boost
+  },
+
+  modalBtnText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });

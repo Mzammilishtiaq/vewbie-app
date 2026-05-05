@@ -1,7 +1,7 @@
 import React, {useCallback} from 'react';
 import {SafeAreaView} from '@amazon-devices/react-native-safe-area-context';
 import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/ChannelList';
+import ChannelList from '../components/ChannelList';
 import {
   FlatList,
   Image,
@@ -25,37 +25,15 @@ import {useChannelStore} from '../store/channelStore';
 import {SearchVideoResultProps} from '../Types/interface';
 import Spinner from '../components/Spinner/Spinner';
 import {RootStackParamList} from '../Types/navigations';
-import SortModal from '../components/Modal/SortModal';
+import FilterModal from '../components/Modal/FilterModal';
+import CategoryiesListModal from '../components/Modal/CategoryiesListModal';
+import {categorylistModalProps} from '../Types/interface';
 
 type SearchRouteProp = RouteProp<RootStackParamList, 'Search'>;
-export const sortOptions = [
-  {
-    id: 1,
-    label: 'Newest First',
-    columnOrder: 'createdAt',
-    order: 'desc',
-  },
-  {
-    id: 2,
-    label: 'Oldest First',
-    columnOrder: 'createdAt',
-    order: 'asc',
-  },
-  {
-    id: 3,
-    label: 'A to Z',
-    columnOrder: 'title',
-    order: 'asc',
-  },
-  {
-    id: 4,
-    label: 'Z to A',
-    columnOrder: 'title',
-    order: 'desc',
-  },
-];
+
 const SearchResultScreen = () => {
-  const {params} = useRoute<SearchRouteProp>();
+  const route = useRoute<SearchRouteProp>();
+  const {params} = route;
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const {query} = params;
   const encodedQuery = encodeURIComponent(query ?? '');
@@ -63,27 +41,47 @@ const SearchResultScreen = () => {
   const [searchResults, setSearchResults] = React.useState<
     SearchVideoResultProps[]
   >([]);
+  const [categories, setCategories] = React.useState<categorylistModalProps[]>(
+    [],
+  );
   const [loading, setLoading] = React.useState(false);
-
-  const [modalVisible, setModalVisible] = React.useState(false);
-  const [selectedSort, setSelectedSort] = React.useState(sortOptions[0]);
-
-  const setModal = useCallback((val: boolean) => {
-    setModalVisible(val);
-  }, []);
+  const [filterVisible, setFilterVisible] = React.useState(false);
+  const [startDate, setStartDate] = React.useState<string | null>(null);
+  const [endDate, setEndDate] = React.useState<string | null>(null);
   // API Call to fetch search result based on query and filter and sort options
+  const [categoryVisible, setCategoryVisible] = React.useState(false);
+  const [selectedCategory, setSelectedCategory] =
+    React.useState<categorylistModalProps | null>(null);
   const fetchSearchResult = async () => {
     if (!selectedChannel?.hostName) return;
     setLoading(true);
 
     try {
-      const response = await backendCall({
-        url: `/search?offset=0&limit=12&columnFilter=all&columnOrder=timestamp&order=DESC&search=${encodedQuery}`,
-        method: 'GET',
-        origin: selectedChannel?.hostName,
-      });
-      console.log('FULL RESPONSE:', response);
-      setSearchResults(response?.data || []);
+      const [searchRes, categoryRes] = await Promise.all([
+        backendCall({
+          url: `/search?offset=0&limit=12&columnFilter=all&columnOrder=timestamp&order=DESC&categories_slug=${
+            selectedCategory?.slug || 'null'
+          }&start_date=${startDate || ''}&end_date=${
+            endDate || ''
+          }&search=${encodedQuery}`,
+          method: 'GET',
+          origin: selectedChannel?.hostName,
+        }),
+
+        backendCall({
+          url: `/list-all-categories?columnOrder=category_name&order=ASC&categoryWithoutParent=true`,
+          method: 'GET',
+          origin: selectedChannel?.hostName,
+        }),
+      ]);
+
+      console.log('Search Response:', searchRes);
+      console.log('Category Response:', categoryRes.data);
+
+      setSearchResults(searchRes?.data || []);
+
+      // optional: store categories in state if needed
+      setCategories(categoryRes?.data || []);
     } catch (error: any) {
       console.log('API Error:', error);
     } finally {
@@ -91,22 +89,17 @@ const SearchResultScreen = () => {
     }
   };
 
-  // useeffect
-  React.useEffect(() => {
-    if (!selectedChannel?.hostName) return;
-    fetchSearchResult();
-  }, [selectedChannel, query]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!selectedChannel?.hostName) return;
-
-      fetchSearchResult();
-    }, [selectedChannel, query]),
-  );
+  // Load channel on mount
   React.useEffect(() => {
     loadChannel();
   }, []);
+  // Refetch on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedChannel?.hostName) return;
+      fetchSearchResult();
+    }, [selectedChannel, query, selectedCategory, startDate, endDate]),
+  );
 
   return (
     <SafeAreaView
@@ -123,7 +116,7 @@ const SearchResultScreen = () => {
             flexDirection: 'column',
             gap: 50,
           }}>
-          <CategoryList />
+          <ChannelList navigation={navigation} currentRoute={route.name} />
           <View
             style={{
               display: 'flex',
@@ -156,15 +149,23 @@ const SearchResultScreen = () => {
                 gap: 20,
               }}>
               <Pressable
-                style={{
-                  width: 98,
-                  height: 56,
-                  backgroundColor: 'rgba(217,217,217,0.1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
+                onPress={() => {
+                  setFilterVisible(true);
+                }}
+                disabled={searchResults.length > 0 ? false : true}
+                style={({focused}) => [
+                  {
+                    width: 98,
+                    height: 56,
+                    backgroundColor: focused
+                      ? 'rgb(1, 131, 253)'
+                      : 'rgba(217,217,217,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                ]}>
                 <Text
                   style={{
                     fontSize: 20,
@@ -174,24 +175,31 @@ const SearchResultScreen = () => {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => setModal(true)}
-                style={{
-                  width: 310,
-                  height: 56,
-                  backgroundColor: 'rgba(217,217,217,0.1)',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 20,
-                  paddingVertical: 20,
-                }}>
+                disabled={searchResults.length > 0 ? false : true}
+                onPress={() => {
+                  setCategoryVisible(true);
+                }}
+                style={({focused}) => [
+                  {
+                    width: 310,
+                    height: 56,
+                    backgroundColor: focused
+                      ? 'rgb(1, 131, 253)'
+                      : 'rgba(217,217,217,0.1)',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingHorizontal: 20,
+                    paddingVertical: 20,
+                  },
+                ]}>
                 <Text
                   style={{
                     fontSize: 20,
                     color: '#fff',
                   }}>
-                  Sort By
+                  CategoryList
                 </Text>
                 <Image
                   source={ArrowIcon}
@@ -266,12 +274,20 @@ const SearchResultScreen = () => {
           </View>
         </View>
       </MainContainer>
-      <SortModal
-        visible={modalVisible}
-        onClose={() => setModal(false)}
-        options={sortOptions}
-        selected={selectedSort}
-        onSelect={setSelectedSort}
+      <FilterModal
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        onApply={({start, end}: any) => {
+          setStartDate(start.toISOString());
+          setEndDate(end.toISOString());
+        }}
+      />
+      <CategoryiesListModal
+        visible={categoryVisible}
+        onClose={() => setCategoryVisible(false)}
+        options={categories}
+        selected={selectedCategory}
+        onSelect={setSelectedCategory}
       />
     </SafeAreaView>
   );

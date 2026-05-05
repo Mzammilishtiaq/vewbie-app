@@ -1,7 +1,12 @@
 import {View, Text, Image, StyleSheet} from 'react-native';
 import React from 'react';
 import seemore from '../assets/icons/see-more-icon.png';
-import {Pressable} from '@amazon-devices/react-native-kepler';
+import {
+  Pressable,
+  StyleProp,
+  ViewStyle,
+  ImageStyle,
+} from '@amazon-devices/react-native-kepler';
 
 interface CardProps {
   title?: string;
@@ -9,7 +14,14 @@ interface CardProps {
   image?: string | number;
   onPress?: () => void;
   onFocus?: () => void;
-  hasTVPreferredFocus?:boolean
+  hasTVPreferredFocus?: boolean;
+  nextFocusLeft?: any;
+  nextFocusRight?: any;
+  nextFocusUp?: any;
+  nextFocusDown?: any;
+  imagestyle?: StyleProp<ImageStyle>;
+  contentstyle?: StyleProp<ViewStyle>;
+  contentpressstyle?: StyleProp<ViewStyle>;
 }
 
 const getDisplayText = (title?: string) => {
@@ -35,36 +47,47 @@ export const CategoryCard = ({
   image,
   onPress,
   onFocus,
-  hasTVPreferredFocus
+  hasTVPreferredFocus,
+  nextFocusDown,
+  nextFocusLeft,
+  nextFocusRight,
+  nextFocusUp,
+  contentstyle,
+  contentpressstyle,
+  imagestyle,
 }: CardProps) => {
   const [isFocused, setIsFocused] = React.useState(false);
   return (
     <View style={styles.cardContainer}>
       <View style={{position: 'relative'}}>
         <Pressable
-        hasTVPreferredFocus={hasTVPreferredFocus}
+          hasTVPreferredFocus={hasTVPreferredFocus}
           onPress={onPress}
           onFocus={onFocus}
           onBlur={() => setIsFocused(false)}
-          style={({focused}) => [styles.pressable, focused && styles.focused]}>
+          nextFocusLeft={nextFocusLeft}
+          nextFocusRight={nextFocusRight}
+          nextFocusUp={nextFocusUp}
+          nextFocusDown={nextFocusDown}
+          style={({focused}) => [styles.pressable, focused && styles.focused,contentpressstyle || {}]}>
           {image == null ? (
             <View
-              style={{
-                width: 306,
-                height: 172,
-                backgroundColor: '#007BFF',
-                borderRadius: 10,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
+              style={[
+                {
+                  backgroundColor: '#007BFF',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                },
+                contentstyle,
+              ]}>
               <Text style={{color: '#fff', fontSize: 48}}>
                 {getDisplayText(title)}
               </Text>
             </View>
           ) : (
             <Image
-              style={styles.image}
+              style={[styles.image, imagestyle]}
               source={typeof image === 'string' ? {uri: image} : image}
             />
           )}
@@ -97,9 +120,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   image: {
-    width: 306,
-    height: 172,
-    borderRadius: 10,
     resizeMode: 'cover',
   },
   title: {
@@ -112,12 +132,12 @@ const styles = StyleSheet.create({
     color: '#AAAAAA',
   },
   pressable: {
-    borderRadius: 10,
+    // borderRadius: 10,
     overflow: 'hidden',
   },
   focused: {
     borderWidth: 7,
     borderColor: 'white',
-    borderRadius: 10,
+    borderRadius: 0,
   },
 });
