@@ -7,12 +7,13 @@ import {StackNavigationProp} from '@amazon-devices/react-navigation__stack';
 import {
   useFocusEffect,
   useNavigation,
+  useRoute,
 } from '@amazon-devices/react-navigation__native';
 
 import Imageimg from '../assets/image.png';
 
 import MainContainer from '../Container/MainContainer';
-import CategoryList from '../components/ChannelList';
+import ChannelList from '../components/ChannelList';
 import {VideoCard} from '../components/Cards/VideoCard';
 import {backendCall} from '../services/backendCall';
 import {useChannelStore} from '../store/channelStore';
@@ -27,6 +28,7 @@ type FavouriteNavigationProp = StackNavigationProp<
 
 const FavouriteScreen = () => {
   const navigation = useNavigation<FavouriteNavigationProp>();
+  const route = useRoute();
   const {selectedChannel, loadChannel} = useChannelStore((state) => state);
   const [favouriteVideos, setFavouriteVideos] = useState<FavouriteVideoItem[]>(
     [],
@@ -80,7 +82,7 @@ const FavouriteScreen = () => {
             flexDirection: 'column',
             gap: 50,
           }}>
-          <CategoryList />
+          <ChannelList navigation={navigation} currentRoute={route.name} />
           <View
             style={{
               display: 'flex',
